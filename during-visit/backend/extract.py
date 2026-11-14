@@ -84,6 +84,7 @@ class Exercise(BaseModel):
     limit_deg: Optional[int] = Field(None, description="Movement LIMIT the clinician set, in degrees, e.g. 'don't bend past 90' -> 90")
     equipment: Optional[str] = Field(None, description="e.g. walker, chair with armrests, resistance band")
     form_cues: list[str] = Field(default_factory=list, description="Short coaching cues the clinician gave")
+    cancelled: bool = Field(False, description="True only if the clinician cancelled / took this exercise out of the plan")
     explanation_patient_lang: str
 
 
@@ -234,6 +235,15 @@ EXTRACT_PROMPT = """You are a careful medical scribe helping a PATIENT (not the 
 Doctor's language: {doc_lang}. Patient's language: {pat_lang}.
 
 Read the visit transcript so far and return the COMPLETE current notes (not just changes).
+You are EDITING the notes below, written earlier in this same visit:
+- Keep every item that is still true, even if it isn't mentioned again later in the transcript.
+- Change an item when the clinician changes it ("make that 3 sets" -> update sets on that same exercise).
+- Add new items. Never drop an item just because the latest part of the conversation is about something else.
+- If the clinician cancels an exercise, keep it with cancelled=true. If a medicine is stopped, keep it with change="stopped".
+
+Notes so far (JSON):
+{previous}
+
 Rules:
 - Only include what was actually said. Never invent doses, drug names, or dates.
 - Copy medication names, doses and numbers exactly as spoken.
@@ -257,9 +267,11 @@ Transcript:
 """
 
 
-async def extract_notes(utterances, questions, doc_lang, pat_lang) -> VisitNotes:
+async def extract_notes(utterances, questions, doc_lang, pat_lang, previous: dict | None = None) -> VisitNotes:
     q = "\n".join(f"{x['id']}: {x['text']}" for x in questions) or "(none)"
+    prev = {k: v for k, v in (previous or {}).items() if k not in ("questions", "wrapping_up") and v}
     prompt = EXTRACT_PROMPT.format(
+        previous=json.dumps(prev, ensure_ascii=False) if prev else "(none yet)",
         doc_lang=lang_name(doc_lang), pat_lang=lang_name(pat_lang),
         questions=q, transcript=_transcript_text(utterances) or "(nothing yet)",
         exercise_keys=exercise_library.prompt_list(),
@@ -313,3 +325,39 @@ async def scan_document(image: bytes, mime: str, doc_lang, pat_lang) -> ScanResu
         SCAN_PROMPT.format(doc_lang=lang_name(doc_lang), pat_lang=lang_name(pat_lang)),
     ]
     return await _json_call(parts, ScanResult)
+
+
+# ---------------------------------------------------------------- "Ask about my visits"
+
+class AskAnswer(BaseModel):
+    found: bool = Field(description="False if the sources don't answer the question")
+    answer: str = Field(description="2-4 short sentences in the patient's language, plain words")
+    source_numbers: list[int] = Field(default_factory=list, description="Numbers of the sources used, e.g. [1, 3]")
+
+
+ASK_PROMPT = """You answer a patient's question using ONLY their own visit records below (found by search).
+Patient's language: {pat_lang}. Answer in {pat_lang}, in 2-4 short, plain sentences.
+Rules:
+- Use only the numbered sources. Cite them in source_numbers. Never add medical advice that isn't in them.
+- Copy medicine names, doses, numbers and dates exactly.
+- If the sources don't answer the question, set found=false and say kindly that it isn't in their visit notes
+  and they should ask their care team.
+- If anything sounds urgent (warning signs), repeat the instruction from the sources.
+
+Question: {question}
+
+Sources:
+{sources}
+"""
+
+
+async def ask(question: str, sources: list[dict], pat_lang: str) -> AskAnswer:
+    lines = []
+    for i, s in enumerate(sources, 1):
+        bits = [s.get("title"), s.get("detail"), s.get("extra")]
+        when = " ".join(x for x in [s.get("date"), s.get("provider")] if x)
+        lines.append(f"[{i}] ({when}) " + " | ".join(b for b in bits if b))
+    prompt = ASK_PROMPT.format(pat_lang=lang_name(pat_lang or "en"), question=question,
+                               sources="\n".join(lines) or "(no sources found)")
+    return await _json_call(prompt, AskAnswer)
+

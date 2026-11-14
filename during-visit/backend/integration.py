@@ -9,6 +9,8 @@
     GET  /api/patients/{patient_id}/dashboard -> everything the patient dashboard shows, in one call
     GET/POST/DELETE /api/patients/{patient_id}/questions -> questions saved for the next visit
     DELETE /api/patients/{patient_id}?confirm=yes -> erase this patient's demo data (if ALLOW_RESET)
+    GET  /api/patients/{patient_id}/search?q=...  -> Typesense search across the patient's records
+    POST /api/patients/{patient_id}/ask {"question": ...} -> plain-language answer built from search results
     GET  /api/visits/{visit_id}               -> one full visit (in main.py)
     POST <MAIN_APP_WEBHOOK_URL>               <- we send the full visit when it ends
 
@@ -31,6 +33,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 import config
 import exercise_library
+import notes_merge
 import storage
 
 log = logging.getLogger("integration")
@@ -67,7 +70,7 @@ def build_context(patient_id: str) -> dict:
             else:
                 meds.pop(f"stopped:{key}", None)
                 meds[key] = {**m, **base}
-        for e in notes.get("exercises", []):
+        for e in notes_merge.active_exercises(notes):
             exercises[(e.get("name") or "").lower()] = {**e, **base}
         care += [{**c, **base} for c in notes.get("care_items", [])]
         open_questions = [{"text": q["text"], "text_doctor_lang": q.get("text_doctor_lang"), **base}
@@ -158,7 +161,7 @@ def plan_from_visit(v: dict) -> dict | None:
     """Turn one visit's exercise notes into a workout plan the PT app can load.
     Fields the therapist didn't mention stay null -> the PT app keeps its own defaults for those."""
     notes = v.get("notes") or {}
-    exercises = notes.get("exercises") or []
+    exercises = notes_merge.active_exercises(notes)          # cancelled ones stay out of the plan
     if not exercises:
         return None
     therapy = notes.get("therapy") or {}
@@ -407,6 +410,57 @@ async def delete_question(patient_id: str, question_id: str):
     qs = await asyncio.to_thread(load_questions, patient_id)
     await asyncio.to_thread(save_questions, patient_id, [x for x in qs if x["id"] != question_id])
     return {"ok": True}
+
+
+# ------------------------------------------------------------------ search + ask (Typesense)
+
+async def _search(patient_id: str, q: str) -> dict:
+    """Typesense first; if it's not configured or not reachable, the local fallback (labelled as such)."""
+    import search_index
+    try:
+        return await search_index.search(patient_id, q)
+    except Exception as e:
+        if config.TYPESENSE_URL:
+            log.warning("typesense search failed, using local search: %s", e)
+        res = search_index.local_search(patient_id, q, await asyncio.to_thread(_patient_visits, patient_id))
+        res["fallback_reason"] = "Typesense is not configured" if not config.TYPESENSE_URL else f"Typesense error: {str(e)[:120]}"
+        return res
+
+
+@router.get("/api/patients/{patient_id}/search")
+async def search_records(patient_id: str, q: str = ""):
+    if len(q) > 200:
+        raise HTTPException(400, "query too long")
+    return await _search(patient_id, q)
+
+
+@router.post("/api/patients/{patient_id}/ask")
+async def ask_records(patient_id: str, request: Request):
+    import extract
+    body = await request.json()
+    question = str(body.get("question") or "").strip()[:300]
+    if not question:
+        raise HTTPException(400, "question is required")
+    res = await _search(patient_id, question)
+    order = ["medications", "exercises", "care_items", "visit_chunks", "visits"]
+    hits = [h for c in order for h in res["groups"].get(c, [])]
+    # most relevant first (Typesense's text_match score); collection order breaks ties
+    sources = sorted(hits, key=lambda h: -(h.get("score") or 0))[:10]
+    visits = await asyncio.to_thread(_patient_visits, patient_id)
+    pat_lang = body.get("lang") or (visits[-1].get("patient_lang") if visits else "en")
+    out = {"question": question, "engine": res["engine"], "sources": [], "answer": None, "found": False}
+    if not sources:
+        out["answer"] = "I couldn't find that in your visit notes. Please ask your care team."
+        return out
+    try:
+        a = await extract.ask(question, sources, pat_lang)
+        used = [n for n in a.source_numbers if 1 <= n <= len(sources)] or list(range(1, min(3, len(sources)) + 1))
+        out.update(answer=a.answer, found=a.found, sources=[{"n": n, **sources[n - 1]} for n in used])
+    except Exception as e:                       # Gemini down / over quota: still show what search found
+        log.warning("ask failed: %s", e)
+        out.update(answer=None, error="The answer service is busy. Here is what your records say:",
+                   sources=[{"n": i + 1, **s} for i, s in enumerate(sources[:4])])
+    return out
 
 
 # ------------------------------------------------------------------ reset (demo)

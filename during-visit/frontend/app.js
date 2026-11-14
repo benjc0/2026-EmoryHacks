@@ -317,7 +317,7 @@ function renderNotes() {
   const diag = (n.diagnoses || []).map((d) => `<div class="nitem"><div class="t">${esc(d.name)}</div><div class="d">${esc(d.explanation_patient_lang)}</div></div>`);
   const meds = (n.medications || []).map((m) => `<div class="nitem"><div class="t">${esc(m.name)} ${m.dose ? `<span class="num">${esc(m.dose)}</span>` : ""}${docTag(m)}</div>
       <div>${hl([m.frequency, m.instructions].filter(Boolean).join(" · "))}</div><div class="d">${hl(m.explanation_patient_lang)}</div></div>`);
-  const ex = (n.exercises || []).map((x) => {
+  const ex = (n.exercises || []).filter((x) => !x.cancelled).map((x) => {
     const sideTag = x.side && x.side !== "both" ? `<span class="tag">${esc(t(x.side))}</span>` : "";
     const sets = x.sets_count || x.sets, reps = x.reps_count || x.reps;
     const dose = [sets && reps ? `${sets} × ${reps}` : sets ? `${sets} ${t("sets")}` : reps ? `${reps} ${t("reps")}` : "",

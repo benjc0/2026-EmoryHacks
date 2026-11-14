@@ -164,6 +164,26 @@ in the FaceTime agent's `prompt_context` ("Seated knee extension: 8/10 good reps
 to wherever the PT app runs (`?patient_id=...` is added). Or set `PT_APP_DIR` to the PT app's folder and
 Visit Copilot serves it at `/pt` on the same address (no CORS setup needed).
 
+## 2e. Search (Typesense)
+
+```
+GET  VISIT_COPILOT_URL/api/patients/p123/search?q=blood%20thinner
+POST VISIT_COPILOT_URL/api/patients/p123/ask      {"question": "When should I call my doctor?"}
+```
+
+`/search` runs one Typesense multi-search across all five collections, always filtered to the patient:
+typo tolerance, synonyms (one-way "blood thinner" -> apixaban; two-way English <-> Korean), prefix matching,
+highlighting (`snippet_html` has `<mark>` around matches, already escaped), and meaning-based search when an
+embedding model is enabled. Response: `{engine: "typesense"|"local", took_ms, total, groups: {medications,
+exercises, care_items, visit_chunks, visits: [{title, detail, extra, snippet_html, date, provider, visit_id}]}}`.
+If Typesense can't be reached it falls back to a simple search of the backup files (`engine: "local"`).
+
+`/ask` searches first, then has Gemini answer in 2-4 plain sentences using only those results, with
+`sources` (numbered). If Gemini is busy, it still returns the sources.
+
+The dashboard's **"Search your visits"** card (`after-visit/js/visitSearch.js`) uses both. Edit the synonym
+list in `backend/search_index.py` (`SYNONYMS`), then run `python search_index.py synonyms`.
+
 ## 3. Get notified when a visit ends (webhook)
 
 Set this in Visit Copilot's `backend/.env`:
