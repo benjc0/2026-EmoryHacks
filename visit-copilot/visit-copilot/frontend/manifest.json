@@ -1,0 +1,8 @@
+{
+  "name": "Visit Copilot",
+  "short_name": "Copilot",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f3ee",
+  "theme_color": "#127a5a"
+}

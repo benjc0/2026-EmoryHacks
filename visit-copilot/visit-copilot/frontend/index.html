@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#f6f3ee" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Visit Copilot</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ============ SETUP ============ -->
+  <section id="screen-setup" class="screen active" aria-labelledby="setup-title">
+    <header class="brand">
+      <div class="logo" aria-hidden="true">◐</div>
+      <div>
+        <h1 id="setup-title">Visit Copilot</h1>
+        <p class="sub">Live interpreter and notes for your doctor's visit</p>
+      </div>
+    </header>
+
+    <form id="setup-form" class="card stack">
+      <div class="row2">
+        <label>Doctor speaks
+          <select id="doctor-lang"></select>
+        </label>
+        <label>Patient/family speaks
+          <select id="patient-lang"></select>
+        </label>
+      </div>
+      <label>Doctor or clinic (optional)
+        <input id="provider" placeholder="Dr. Lee, Orthopedics" autocomplete="off" />
+      </label>
+      <label>Questions you want to ask <span class="hint">one per line</span>
+        <textarea id="questions" rows="4" placeholder="Does this medicine have side effects?"></textarea>
+      </label>
+      <button type="button" id="load-demo-q" class="link">Use sample questions</button>
+
+      <label class="consent">
+        <input type="checkbox" id="consent" />
+        <span>Everyone in the room agrees that this visit can be transcribed and translated.</span>
+      </label>
+
+      <button type="submit" id="start-btn" class="primary big" disabled>🎙️ Start visit</button>
+      <button type="button" id="demo-btn" class="secondary" disabled>▶︎ Run demo visit (no mic)</button>
+      <p class="fine">This tool helps you understand your visit. It does not replace a certified medical interpreter for consent forms or emergencies.</p>
+    </form>
+  </section>
+
+  <!-- ============ LIVE VISIT ============ -->
+  <section id="screen-visit" class="screen" aria-label="Live visit">
+    <header class="topbar">
+      <div class="live-dot" id="live-dot" aria-hidden="true"></div>
+      <span id="timer" aria-label="Visit time">00:00</span>
+      <span id="status" class="status" role="status" aria-live="polite"></span>
+      <button id="view-toggle" class="chip" aria-pressed="false" title="Switch which language is shown large">Show doctor ⇄</button>
+    </header>
+
+    <div id="reminder" class="reminder" role="alert" hidden>
+      <div class="reminder-text">
+        <strong id="reminder-title">Before you go</strong>
+        <span id="reminder-body"></span>
+      </div>
+      <button id="reminder-show" class="primary small">Show doctor</button>
+      <button id="reminder-close" class="icon" aria-label="Dismiss">✕</button>
+    </div>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" class="tab active" data-tab="captions" aria-selected="true"><span data-i18n="captions">Captions</span></button>
+      <button role="tab" class="tab" data-tab="questions" aria-selected="false"><span data-i18n="questions">Questions</span> <b id="q-badge" class="badge"></b></button>
+      <button role="tab" class="tab" data-tab="notes" aria-selected="false"><span data-i18n="notes">Notes</span> <b id="n-badge" class="badge"></b></button>
+    </nav>
+
+    <main class="panes">
+      <div id="pane-captions" class="pane active" role="tabpanel">
+        <ol id="captions" class="captions" aria-live="polite" aria-relevant="additions text"></ol>
+        <p id="captions-empty" class="empty" data-i18n="listening">Listening… start talking.</p>
+      </div>
+      <div id="pane-questions" class="pane" role="tabpanel">
+        <ul id="question-list" class="qlist"></ul>
+        <form id="add-q" class="addq">
+          <input id="add-q-input" placeholder="Add a question…" aria-label="Add a question" />
+          <button class="secondary small">Add</button>
+        </form>
+      </div>
+      <div id="pane-notes" class="pane" role="tabpanel">
+        <div id="notes"></div>
+      </div>
+    </main>
+
+    <footer class="bottombar">
+      <label class="tool" title="Photograph a paper from the doctor">
+        <input type="file" id="scan-input" accept="image/*" capture="environment" hidden />
+        <span aria-hidden="true">📄</span><small data-i18n="scan">Scan paper</small>
+      </label>
+      <button class="tool" id="speak-toggle" aria-pressed="false"><span aria-hidden="true">🔈</span><small data-i18n="speak">Speak aloud</small></button>
+      <button class="tool" id="text-size"><span aria-hidden="true">Aa</span><small data-i18n="size">Text size</small></button>
+      <button class="tool end" id="end-btn"><span aria-hidden="true">■</span><small data-i18n="end">End visit</small></button>
+    </footer>
+  </section>
+
+  <!-- ============ SUMMARY ============ -->
+  <section id="screen-summary" class="screen" aria-labelledby="sum-title">
+    <header class="brand">
+      <div class="logo" aria-hidden="true">✓</div>
+      <div><h1 id="sum-title" data-i18n="summary">Visit summary</h1><p class="sub" id="sum-meta"></p></div>
+    </header>
+    <div id="summary" class="stack"></div>
+    <button class="secondary" onclick="location.reload()">New visit</button>
+  </section>
+
+  <!-- ============ SHOW-TO-DOCTOR CARD ============ -->
+  <dialog id="show-card" aria-label="Question for the doctor">
+    <p class="show-label" id="show-label">Question for the doctor</p>
+    <p class="show-big" id="show-big"></p>
+    <p class="show-small" id="show-small"></p>
+    <div class="row2">
+      <button class="primary" id="show-asked">✓ Asked</button>
+      <button class="secondary" id="show-close">Close</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>
