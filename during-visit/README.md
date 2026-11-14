@@ -70,3 +70,4 @@ get saved as `open_question` care items, so the at-home side can bring them up.
 - If you use "Speak aloud", use earbuds so the mic doesn't re-translate the translation.
 - Rehearse on venue Wi-Fi; keep the demo-visit button as a fallback.
 - Mock patients only, no real health data.
+-make video
