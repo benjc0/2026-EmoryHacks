@@ -50,6 +50,14 @@ even though this audit removes it from the current tree.
 No secret values are reproduced anywhere in this report, in commit
 messages, or in any file this audit added.
 
+**Update:** while merging `main` into this branch (see §7), a second live
+leak was found. A teammate's commit on `main` (`1ced062`, "updated env
+ file") blanked the old Gemini key but added a **new, live-looking
+Typesense API key** to the still-tracked `.env` file. That commit is
+already on `origin/main`. This key must be rotated as well, separately
+from the one above. It was not reproduced anywhere during the merge; the
+merged `.env.example` keeps a blank placeholder for it.
+
 *Action taken:*
 - `.env` was untracked (`git rm --cached`, kept on disk since it holds the
   real local working keys for the person who runs this checkout).
