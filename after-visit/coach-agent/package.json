@@ -1,0 +1,22 @@
+{
+  "name": "emory-pt-coach",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.23.2 || ^24.0.0 || ^26.0.0"
+  },
+  "scripts": {
+    "start": "node --env-file=.env.local agent.mjs start",
+    "check": "node --check chert-rooms.mjs && node --check agent.mjs && node --check face.mjs && node --check greet.mjs && node --check caller-video.mjs && node --check caller-audio.mjs && node --check pose.mjs && node --check pose-frames.mjs && node --check coach-session.mjs && node --check outbound.mjs && node --check call-server.mjs",
+    "help": "node agent.mjs --help",
+    "call-server": "node --env-file=.env.local call-server.mjs"
+  },
+  "dependencies": {
+    "@livekit/agents": "1.8.0",
+    "@livekit/agents-plugin-google": "1.8.0",
+    "@livekit/rtc-node": "0.13.35",
+    "livekit-server-sdk": "2.19.3"
+  },
+  "description": "AI physical-therapy coach for FaceTime (Chert + LiveKit + Gemini Live), with live rep counting"
+}

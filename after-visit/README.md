@@ -1,4 +1,19 @@
-# After Visit: PT session (bare-bones prototype)
+# After Visit: home PT sessions
+
+**The real session page is `session.html`** (open http://localhost:8000/session.html). It runs the therapist's plan: side arm raise (precise mode, shows degrees), then mini squat (simple mode, no numbers). Each exercise records on its own, reps are scored and spoken, and the whole session is saved on the device for the therapist.
+
+`index.html` is still the older one-exercise prototype described below. It becomes the patient dashboard in a later step.
+
+**Or do it on a FaceTime call.** Patients can pick the second path: an AI coach that calls them on FaceTime (through Chert), talks them through the same plan, watches the camera, counts and scores reps out loud with the same tracker, and saves the session in the same format. See [coach-agent/README.md](coach-agent/README.md). `coach-test.html` is its test page: "Have my coach call my iPhone", or talk to the coach in the browser.
+
+## Session page (`session.html`)
+
+1. **Today's plan:** the exercises, reps and targets from the therapist, a safety note, camera tips, and a "Talk me through it" switch.
+2. **Each exercise:** checks you're in the picture, counts 3-2-1, and starts recording on its own. Live skeleton (the measured joint turns salmon when your form slips), big angle and rep numbers, a bar that turns peach at the target, and a coach line. "Skip this one" and "End" are always there.
+3. **Between exercises:** how each rep went (Good / Fair / Poor, with icons and words, not color alone) and what's next.
+4. **Done:** a summary, then everything is saved on the phone: reps, scores, ~15 tracked frames a second, and one video per exercise.
+
+## Prototype (`index.html`)
 
 Pick an exercise, prop your phone or laptop camera up, and press **Start session**:
 
@@ -43,7 +58,9 @@ Then open the printed `https://….trycloudflare.com` link in Safari.
 
 | File | What it does |
 |---|---|
-| `index.html`, `style.css`, `app.js` | the three screens: pick → live session → results |
+| `session.html`, `session.css`, `session.js` | the real session: plan → each exercise → between → done (saved) |
+| `js/exerciseTracker.js` | runs one exercise: landmarks in, angle + rep events + logged frames out; auto-picks the moving side |
+| `index.html`, `style.css`, `app.js` | the older one-exercise prototype: pick → live session → results |
 | `js/exercises.js` | exercise definitions: which 3 body points form the angle, start zone, target, hold time, form rules. Add exercises here |
 | `js/repCounter.js` | turns the angle stream into reps and scores each one |
 | `js/analysis.js`, `js/geometry.js` | joint angles, body lean, side visibility |
@@ -53,7 +70,9 @@ Then open the printed `https://….trycloudflare.com` link in Safari.
 | `js/plan.js` | the therapist's home plan: which exercises, reps, target angle, precise or simple mode |
 | `js/sessionLog.js` | records a session: landmark frames, reps, scores, pain check, flagged reps, "needs attention" |
 | `js/store.js` | saves sessions on the device (IndexedDB): records, frames and videos. Falls back to memory |
-| `tests/` | `npm install` once, then `npm test` runs the unit tests (rep counting, scoring, logging, storage) |
+| `tests/` | `npm install` once, then `npm test` runs the unit tests. `fakePerson.mjs` is a synthetic body doing good and short reps |
+| `coach-agent/` | the FaceTime coach (Chert + LiveKit + Gemini Live + MediaPipe); its own README |
+| `coach-test.html` | test page for the coach, served by `coach-agent/call-server.mjs` |
 
 ## Saved data
 
@@ -67,17 +86,4 @@ Each session is saved on the device in three parts, so the session list stays fa
 
 ## Next steps (from the plan)
 
-Dashboard with the 3 cards, saving sessions to the backend, the therapist review page, and progress across weeks.
-
-
-## Patient dashboard
-
-Open `http://localhost:8000` after serving this folder. `index.html` is now the dashboard; the original camera app is retained at `session.html`.
-
-The dashboard follows `design-system/ai-clinic-assistant/pages/patient-dashboard.md` and the shared design tokens. It includes responsive cards, a navigable week, day detail, an exercise-plan dialog, light/dark mode, local questions with optional voice input, and a multi-exercise session queue.
-
-The patient name and care plan are samples from the design brief and `js/plan.js`. No appointments or medicines are invented. Counts start at zero and reflect completed prescribed reps, saved with the pain-check button. The completion marker is not a clinical quality assessment. Questions and completion summaries are stored in this browser's localStorage. Full video/tracking data and pain notes still require download from the original results screen. Nothing syncs to the clinic.
-
-Start session runs the remaining prescribed exercises, one at a time. After saving a pain check, choose Next exercise and start the next camera setup. The plan uses the existing five-rep prescriptions; no unprescribed sets, rest intervals, or demo completion records are added. Demo imagery is a position illustration, not a motion video.
-
-New files: `dashboard.js`, `dashboard.css`, `js/dashboardData.js`, and `tests/dashboard.test.mjs`.
+Dashboard with the 3 cards (including the choice between recording and a FaceTime coach session), saving sessions to the backend, the therapist review page, and progress across weeks. For the FaceTime coach: getting caller audio working on the Chert line (see its Known issues).

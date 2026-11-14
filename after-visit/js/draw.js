@@ -5,8 +5,6 @@ import { CONNECTIONS, SIDES } from './geometry.js';
 export const pack = (lms) => lms.map((p) => [+p.x.toFixed(4), +p.y.toFixed(4), +p.z.toFixed(4), +(p.visibility ?? 0).toFixed(3)]);
 export const unpack = (arr) => arr.map(([x, y, z, visibility]) => ({ x, y, z, visibility }));
 
-const css = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-
 /**
  * Draw the skeleton. `highlight` = { side, joint:[a,b,c] } draws the measured angle in the accent colour.
  * `mirror` = the canvas is flipped with CSS (selfie view), so text is drawn flipped back.
@@ -36,7 +34,8 @@ export function drawPose(canvas, lms, { highlight, angle, mirror = false, status
   if (highlight) {
     const idx = SIDES[highlight.side];
     const [a, b, c] = highlight.joint.map((n) => P(idx[n]));
-    const color = status === 'warn' ? css('--warn', '#b3261e') : css('--accent', '#127a5a');
+    // design-system pages/pt-session.md: light blue normally, salmon while a form rule is broken
+    const color = status === 'warn' ? '#FFB4A2' : '#A6C8E2';
     ctx.strokeStyle = color; ctx.lineWidth = lw * 2.2;
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.stroke();
     ctx.fillStyle = color;
@@ -51,7 +50,7 @@ export function drawPose(canvas, lms, { highlight, angle, mirror = false, status
       ctx.save();
       ctx.translate(b.x + r * 1.2, b.y - r * 0.6);
       if (mirror) ctx.scale(-1, 1);
-      ctx.font = `700 ${fs}px -apple-system, system-ui, sans-serif`;
+      ctx.font = `600 ${fs}px Inter, -apple-system, system-ui, sans-serif`;
       const tw = ctx.measureText(label).width;
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fillRect(-tw / 2 - 8, -fs * 0.85, tw + 16, fs * 1.2);
