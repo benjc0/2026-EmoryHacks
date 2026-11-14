@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F4F0E2" />
+  <title>Exercise session | AI Clinic Assistant</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="session.css" />
+  <script type="module" src="session.js"></script>
+</head>
+<body>
+  <!-- Icons used on this page (Lucide-style, inline so there is no icon font to load) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-arm" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v7"/><path d="M12 14l-2.5 7"/><path d="M12 14l2.5 7"/><path d="M12 9l-6 4"/><path d="M12 9l7-5"/></symbol>
+    <symbol id="i-squat" viewBox="0 0 24 24"><circle cx="11" cy="4" r="2"/><path d="M11 6l1 6"/><path d="M12 12l-4 3 1 6"/><path d="M12 12l4 2-1 7"/><path d="M11 8h6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-tilde" viewBox="0 0 24 24"><path d="M4 14c2-3 4-3 6-1.5S14 15 16 13s3-2 4-1"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
+
+  <!-- 1. Today's plan -->
+  <main id="screen-plan" class="screen page" aria-labelledby="plan-title">
+    <header class="topline">
+      <a class="btn btn--ghost" href="index.html"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Home</a>
+    </header>
+    <div>
+      <h1 id="plan-title" class="page-title">Today's plan</h1>
+      <p class="muted" id="plan-sub"></p>
+    </div>
+    <p class="safety"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg>
+      <span>Stop and rest if pain goes above 4 out of 10, or if you feel dizzy.</span></p>
+
+    <ol id="plan-list" class="plan-list"></ol>
+
+    <div class="tile setup-tips">
+      <h2 class="tile-title"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Before you start</h2>
+      <ul>
+        <li>Prop your phone up at about waist height, 2 to 3 steps away.</li>
+        <li>Use a bright room, and keep the light in front of you.</li>
+        <li>The camera records each exercise so your therapist can check it. The video stays on this phone.</li>
+      </ul>
+    </div>
+
+    <label class="switch">
+      <input type="checkbox" id="voice" checked />
+      <span class="switch__track" aria-hidden="true"></span>
+      <span><svg class="icon icon--sm" aria-hidden="true"><use href="#i-volume"/></svg>Talk me through it</span>
+    </label>
+
+    <p id="plan-error" class="error tile" role="alert" hidden></p>
+
+    <div class="sticky-cta">
+      <button id="start" class="btn btn--accent btn--lg" type="button">Start session</button>
+    </div>
+  </main>
+
+  <!-- 2. Live exercise (always dark) -->
+  <section id="screen-live" class="screen live" aria-labelledby="live-title" hidden>
+    <header class="live__top">
+      <div class="live__head">
+        <p class="live__step num" id="live-step">Exercise 1 of 2</p>
+        <h1 id="live-title" class="live__title"></h1>
+      </div>
+      <span class="rec" id="rec" aria-live="off"><span class="rec__dot" aria-hidden="true"></span><span class="num" id="rec-time">0:00</span><span class="visually-hidden"> recording</span></span>
+      <button id="end" class="btn btn--dark" type="button">End</button>
+    </header>
+
+    <div class="live__stage-wrap">
+      <div id="stage" class="live__stage">
+        <video id="cam" playsinline muted></video>
+        <canvas id="overlay" aria-hidden="true"></canvas>
+        <div id="countdown" class="countdown num" aria-live="assertive" hidden></div>
+
+        <div id="setup" class="setup" role="group" aria-labelledby="setup-text">
+          <p id="setup-text" class="setup__text"></p>
+          <p id="frame-check" class="frame-check" role="status">Looking for you…</p>
+          <div class="setup__actions">
+            <button id="start-now" class="btn btn--primary" type="button">Start now</button>
+            <button id="skip" class="btn btn--dark" type="button">Skip this one</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div id="metrics" class="hud__m">
+        <div data-precise class="m-big"><small id="m-angle-label">Angle</small><b class="num" id="m-angle">–</b></div>
+        <div data-precise><small>Target</small><b class="num" id="m-target">–</b></div>
+        <div class="m-big"><small>Reps</small><b class="num" id="m-reps">0/0</b></div>
+        <div><small>Good</small><b class="num" id="m-good">0</b></div>
+      </div>
+      <div class="progress" aria-hidden="true"><div class="progress__fill" id="bar-fill"></div><div class="progress__target" id="bar-target"></div></div>
+      <p id="coach" class="coach" role="status" aria-live="assertive">Opening the camera…</p>
+      <ol id="rep-dots" class="rep-dots" aria-label="Reps so far"></ol>
+    </div>
+  </section>
+
+  <!-- 3. Between exercises -->
+  <main id="screen-between" class="screen page" aria-labelledby="between-title" hidden>
+    <div class="hero-tile between">
+      <p class="chip num" id="between-step"></p>
+      <h1 id="between-title" class="page-title"></h1>
+      <p id="between-sub" class="muted-on-tile"></p>
+      <ul id="between-reps" class="rep-list"></ul>
+    </div>
+    <div class="tile next">
+      <p class="muted">Up next</p>
+      <div class="next__row">
+        <span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true"><use id="next-icon" href="#i-squat"/></svg></span>
+        <div><h2 id="next-name" class="tile-title"></h2><p id="next-setup" class="fine"></p></div>
+      </div>
+    </div>
+    <div class="stack">
+      <button id="next" class="btn btn--accent btn--lg" type="button"></button>
+      <button id="next-skip" class="btn btn--secondary" type="button">Skip it and finish</button>
+    </div>
+  </main>
+
+  <!-- 4. Done -->
+  <main id="screen-done" class="screen page" aria-labelledby="done-title" hidden>
+    <div class="celebrate">
+      <svg class="confetti" viewBox="0 0 400 120" aria-hidden="true">
+        <circle cx="40" cy="30" r="6" fill="var(--accent)"/><rect x="90" y="14" width="12" height="12" rx="3" transform="rotate(20 96 20)" fill="var(--primary-soft)"/>
+        <circle cx="150" cy="52" r="4" fill="var(--primary)"/><rect x="210" y="22" width="10" height="16" rx="3" transform="rotate(-25 215 30)" fill="var(--accent)"/>
+        <circle cx="270" cy="40" r="7" fill="var(--blue-soft)"/><rect x="320" y="12" width="12" height="12" rx="3" transform="rotate(35 326 18)" fill="var(--primary)"/>
+        <circle cx="360" cy="60" r="5" fill="var(--accent)"/><circle cx="70" cy="80" r="4" fill="var(--primary)"/><circle cx="330" cy="96" r="4" fill="var(--primary-soft)"/>
+      </svg>
+      <h1 id="done-title" class="page-title center">Session done!</h1>
+      <p id="done-sub" class="muted center"></p>
+      <ul id="done-list" class="done-list"></ul>
+      <p id="saved" class="saved" role="status"></p>
+      <div class="stack">
+        <a class="btn btn--accent btn--lg" href="index.html">Back home</a>
+        <button id="again" class="btn btn--secondary" type="button">Do it again</button>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="confirm-end" class="sheet" aria-labelledby="confirm-title">
+    <h2 id="confirm-title" class="tile-title">End the session?</h2>
+    <p class="muted">The reps you've done so far are saved for your therapist.</p>
+    <div class="stack">
+      <button id="confirm-keep" class="btn btn--primary btn--lg" type="button" autofocus>Keep going</button>
+      <button id="confirm-end-btn" class="btn btn--secondary" type="button">End session</button>
+    </div>
+  </dialog>
+</body>
+</html>
