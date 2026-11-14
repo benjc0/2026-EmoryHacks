@@ -4,6 +4,8 @@ Run once to create collections + synonyms:
     python search_index.py setup          (add --reset to drop and recreate)
 Rebuild Typesense from the JSON backups in backend/data/visits:
     python search_index.py reindex
+Update only the synonyms (after editing SYNONYMS):
+    python search_index.py synonyms
 
 Talks to Typesense over plain HTTP so it works on v29 and v30+ (synonym sets).
 """
@@ -72,18 +74,43 @@ def schemas(pat_locale: str = "ko") -> list[dict]:
     ]
 
 
-# Starter synonyms: everyday words <-> medical terms, Korean <-> English.
+# Synonyms. Two kinds:
+#  - one-way ("root"): a category word also finds the specific terms, e.g. "blood thinner" -> apixaban,
+#    but searching "apixaban" does NOT return every blood thinner.
+#  - two-way: same meaning, usually English <-> Korean ("knee" <-> "무릎").
 SYNONYMS = [
-    {"id": "blood-thinner", "synonyms": ["blood thinner", "anticoagulant", "warfarin", "apixaban", "eliquis", "혈액 희석제", "항응고제"]},
-    {"id": "painkiller", "synonyms": ["painkiller", "pain reliever", "analgesic", "ibuprofen", "acetaminophen", "tylenol", "진통제"]},
-    {"id": "blood-pressure", "synonyms": ["blood pressure", "hypertension", "bp", "혈압", "고혈압"]},
-    {"id": "diabetes", "synonyms": ["diabetes", "blood sugar", "glucose", "metformin", "당뇨", "혈당"]},
-    {"id": "knee", "synonyms": ["knee", "무릎"]},
+    # one-way: everyday category word -> specific medicines
+    {"id": "blood-thinner", "root": "blood thinner", "synonyms": ["apixaban", "eliquis", "warfarin", "coumadin", "rivaroxaban", "xarelto", "anticoagulant"]},
+    {"id": "blood-thinner-ko", "root": "혈액 희석제", "synonyms": ["apixaban", "eliquis", "warfarin", "anticoagulant", "항응고제"]},
+    {"id": "painkiller", "root": "painkiller", "synonyms": ["ibuprofen", "advil", "acetaminophen", "tylenol", "meloxicam", "naproxen", "analgesic"]},
+    {"id": "pain-medicine", "root": "pain medicine", "synonyms": ["ibuprofen", "advil", "acetaminophen", "tylenol", "meloxicam", "naproxen"]},
+    {"id": "painkiller-ko", "root": "진통제", "synonyms": ["ibuprofen", "acetaminophen", "tylenol", "meloxicam", "멜록시캄"]},
+    {"id": "bp-medicine", "root": "blood pressure medicine", "synonyms": ["lisinopril", "amlodipine", "losartan", "metoprolol"]},
+    {"id": "diabetes-medicine", "root": "diabetes medicine", "synonyms": ["metformin", "insulin"]},
+    {"id": "antibiotic", "root": "antibiotic", "synonyms": ["amoxicillin", "azithromycin", "cephalexin", "항생제"]},
+    {"id": "heart-rhythm", "root": "irregular heartbeat", "synonyms": ["atrial fibrillation", "afib", "fluttering", "arrhythmia"]},
+    {"id": "blood-clot", "root": "blood clot", "synonyms": ["dvt", "calf pain", "swollen calf", "혈전"]},
+    # two-way: same meaning (mostly English <-> Korean)
+    {"id": "knee", "synonyms": ["knee", "knees", "무릎"]},
     {"id": "shoulder", "synonyms": ["shoulder", "어깨"]},
-    {"id": "back", "synonyms": ["back", "lower back", "허리", "등"]},
-    {"id": "follow-up", "synonyms": ["follow up", "follow-up", "next appointment", "다음 예약", "재방문"]},
-    {"id": "side-effect", "synonyms": ["side effect", "adverse effect", "부작용"]},
-    {"id": "antibiotic", "synonyms": ["antibiotic", "amoxicillin", "항생제"]},
+    {"id": "back", "synonyms": ["back", "lower back", "허리"]},
+    {"id": "leg", "synonyms": ["leg", "legs", "다리"]},
+    {"id": "heart", "synonyms": ["heart", "cardiac", "심장"]},
+    {"id": "blood-pressure", "synonyms": ["blood pressure", "hypertension", "bp", "혈압", "고혈압"]},
+    {"id": "diabetes", "synonyms": ["diabetes", "blood sugar", "glucose", "당뇨", "혈당"]},
+    {"id": "medicine", "synonyms": ["medicine", "medication", "pill", "drug", "약"]},
+    {"id": "exercise", "synonyms": ["exercise", "exercises", "workout", "운동"]},
+    {"id": "squat", "synonyms": ["squat", "squats", "스쿼트"]},
+    {"id": "walk", "synonyms": ["walk", "walking", "걷기", "보행기", "walker"]},
+    {"id": "stairs", "synonyms": ["stairs", "steps", "계단"]},
+    {"id": "ice", "synonyms": ["ice", "icing", "cold pack", "얼음", "얼음찜질"]},
+    {"id": "pain", "synonyms": ["pain", "hurt", "hurts", "sore", "통증", "아파요", "아프"]},
+    {"id": "swelling", "synonyms": ["swelling", "swollen", "부기", "붓"]},
+    {"id": "dizzy", "synonyms": ["dizzy", "dizziness", "lightheaded", "어지러움", "어지러"]},
+    {"id": "follow-up", "synonyms": ["follow up", "follow-up", "next appointment", "next visit", "appointment", "다음 예약", "재방문", "예약", "진료"]},
+    {"id": "side-effect", "synonyms": ["side effect", "side effects", "adverse effect", "부작용"]},
+    {"id": "emergency", "synonyms": ["emergency", "911", "urgent", "응급", "바로 오세요"]},
+    {"id": "surgery", "synonyms": ["surgery", "operation", "replacement", "수술"]},
 ]
 SYNONYM_SET = "clinic-synonyms"
 
@@ -99,6 +126,20 @@ def _major_version(c: httpx.Client) -> int:
         return int(str(v).lstrip("v").split(".")[0])
     except Exception:
         return 0
+
+
+def push_synonyms():
+    """Update just the synonyms (after editing SYNONYMS) without touching collections or data."""
+    with _client() as c:
+        if _major_version(c) >= 30:
+            r = c.put(f"/synonym_sets/{SYNONYM_SET}", json={"items": SYNONYMS})
+            print("synonym set:", r.status_code, "" if r.is_success else r.text[:200])
+        else:
+            for s in schemas():
+                for syn in SYNONYMS:
+                    body = {"synonyms": syn["synonyms"], **({"root": syn["root"]} if syn.get("root") else {})}
+                    c.put(f"/collections/{s['name']}/synonyms/{syn['id']}", json=body)
+            print("synonyms updated on", len(schemas()), "collections")
 
 
 def setup(reset: bool = False, pat_locale: str = "ko"):
@@ -118,7 +159,8 @@ def setup(reset: bool = False, pat_locale: str = "ko"):
             print(f"collection {s['name']}: {r.status_code} {'' if r.is_success else r.text[:200]}")
             if not v30:
                 for syn in SYNONYMS:
-                    c.put(f"/collections/{s['name']}/synonyms/{syn['id']}", json={"synonyms": syn["synonyms"]})
+                    body = {"synonyms": syn["synonyms"], **({"root": syn["root"]} if syn.get("root") else {})}
+                    c.put(f"/collections/{s['name']}/synonyms/{syn['id']}", json=body)
 
 
 # ---------------------------------------------------------------- indexing
@@ -170,7 +212,7 @@ def build_documents(visit: dict) -> dict[str, list[dict]]:
                                     **{k: (m.get(k) or "") for k in ["name", "generic_name", "dose", "frequency",
                                                                        "purpose", "instructions", "change",
                                                                        "explanation_patient_lang"]}})
-    for i, e in enumerate(notes.get("exercises", [])):
+    for i, e in enumerate(e for e in notes.get("exercises", []) if not e.get("cancelled")):
         docs["exercises"].append({**common, "id": f"{vid}-e{i}", "form_cues": e.get("form_cues") or [],
                                   **{k: (e.get(k) or "") for k in ["name", "body_part", "sets", "reps",
                                                                      "frequency", "explanation_patient_lang"]}})
@@ -224,11 +266,192 @@ def reindex():
     print(f"Reindexed {len(visits)} visit(s).")
 
 
+# ---------------------------------------------------------------- search
+# One multi_search across every collection, always filtered to one patient. Uses Typesense's typo tolerance,
+# synonyms, prefix matching (search-as-you-type) and highlighting; adds meaning-based (vector) search on the
+# transcript collections when an embedding model is configured.
+
+SEARCH_SPEC = {
+    "medications": {"query_by": "name,generic_name,purpose,instructions,explanation_patient_lang", "weights": "4,4,2,1,1", "per_page": 4},
+    "exercises":   {"query_by": "name,body_part,form_cues,explanation_patient_lang",              "weights": "4,3,1,1",   "per_page": 4},
+    "care_items":  {"query_by": "text,text_patient_lang,due",                                      "weights": "3,3,1",     "per_page": 4},
+    "visits":      {"query_by": "summary_doctor_lang,summary_patient_lang,key_points_patient_lang", "weights": "2,2,2",    "per_page": 3},
+    "visit_chunks": {"query_by": "text_doctor_lang,text_patient_lang,text",                         "weights": "2,2,1",     "per_page": 5},
+}
+_SEMANTIC = {"visits", "visit_chunks", "exercises"}   # collections with an embedding field (when enabled)
+
+
+def _marked(snippet: str) -> str:
+    """Typesense snippet -> safe HTML: escape everything, keep only its <mark> tags."""
+    import html as _html
+    out, rest = [], snippet or ""
+    while "<mark>" in rest:
+        before, _, rest = rest.partition("<mark>")
+        word, _, rest = rest.partition("</mark>")
+        out += [_html.escape(before), "<mark>", _html.escape(word), "</mark>"]
+    out.append(_html.escape(rest))
+    return "".join(out)
+
+
+def _best_snippet(hit: dict, fields: list[str]) -> str:
+    hl = hit.get("highlight") or {}
+    for f in fields:                      # v0.25+ structured highlight
+        h = hl.get(f)
+        if isinstance(h, dict) and "<mark>" in (h.get("snippet") or ""):
+            return h["snippet"]
+        if isinstance(h, list):
+            for x in h:
+                if isinstance(x, dict) and "<mark>" in (x.get("snippet") or ""):
+                    return x["snippet"]
+    for h in hit.get("highlights") or []:  # older flat highlights
+        if h.get("snippet"):
+            return h["snippet"]
+        if h.get("snippets"):
+            return h["snippets"][0]
+    return ""
+
+
+def _shape(coll: str, doc: dict, snippet: str, score=None) -> dict:
+    """One result, the same shape whatever collection it came from."""
+    when = time.strftime("%Y-%m-%d", time.localtime(doc.get("date") or 0)) if doc.get("date") else ""
+    base = {"collection": coll, "id": doc.get("id"), "visit_id": doc.get("visit_id"), "date": when,
+            "provider": doc.get("provider") or "", "score": score}
+    if coll == "medications":
+        title = " ".join(x for x in [doc.get("name"), doc.get("dose")] if x)
+        detail = " · ".join(x for x in [doc.get("frequency"), doc.get("purpose")] if x)
+        extra = doc.get("explanation_patient_lang") or ""
+    elif coll == "exercises":
+        title = doc.get("name") or "Exercise"
+        detail = " · ".join(x for x in [doc.get("sets") and f"{doc['sets']} sets", doc.get("reps") and f"{doc['reps']} reps",
+                                         doc.get("frequency")] if x)
+        extra = "; ".join(doc.get("form_cues") or [])
+    elif coll == "care_items":
+        kind = {"warning_sign": "Warning sign", "follow_up": "Follow-up", "test": "Test", "referral": "Referral",
+                "instruction": "Instruction", "open_question": "Question to ask"}.get(doc.get("type"), "To do")
+        title, detail, extra = kind, doc.get("text") or "", doc.get("text_patient_lang") or ""
+        if doc.get("due"):
+            detail += f" ({doc['due']})"
+    elif coll == "visits":
+        title = "Visit summary" + (f" · {doc['provider']}" if doc.get("provider") else "")
+        detail, extra = doc.get("summary_doctor_lang") or "", doc.get("summary_patient_lang") or ""
+    else:  # visit_chunks
+        sec = int(doc.get("start_sec") or 0)
+        title = f"What was said at {sec // 60:02d}:{sec % 60:02d}"
+        detail, extra = doc.get("text_doctor_lang") or doc.get("text") or "", doc.get("text_patient_lang") or ""
+        base["start_sec"] = sec
+    return {**base, "title": title, "detail": detail, "extra": extra,
+            "snippet_html": _marked(snippet) if snippet else ""}
+
+
+async def search(patient_id: str, q: str, collections: list[str] | None = None) -> dict:
+    """Search one patient's records in Typesense. Raises if Typesense isn't configured/reachable."""
+    if not config.TYPESENSE_URL:
+        raise RuntimeError("Typesense is not configured")
+    q = (q or "").strip() or "*"
+    semantic = config.TYPESENSE_EMBED_MODEL.lower() != "off"
+    colls = [c for c in (collections or SEARCH_SPEC) if c in SEARCH_SPEC]
+    searches = []
+    for c in colls:
+        spec = SEARCH_SPEC[c]
+        query_by, weights = spec["query_by"], spec["weights"]
+        if semantic and c in _SEMANTIC and q != "*":
+            query_by, weights = query_by + ",embedding", weights + ",1"   # hybrid: keywords + meaning
+        searches.append({
+            "collection": c, "q": q, "query_by": query_by, "query_by_weights": weights,
+            "filter_by": f"patient_id:=`{patient_id}`",
+            "per_page": spec["per_page"], "num_typos": 2, "prefix": "true",
+            "drop_tokens_threshold": 1,          # long questions: drop words until something matches
+            "highlight_full_fields": spec["query_by"], "highlight_affix_num_tokens": 8,
+            "exclude_fields": "embedding", "sort_by": "_text_match:desc,date:desc" if q != "*" else "date:desc",
+        })
+    t0 = time.time()
+    async with httpx.AsyncClient(base_url=config.TYPESENSE_URL, timeout=15,
+                                 headers={"X-TYPESENSE-API-KEY": config.TYPESENSE_API_KEY}) as c:
+        r = await c.post("/multi_search", json={"searches": searches})
+    r.raise_for_status()
+    groups, total = {}, 0
+    for c, res in zip(colls, r.json().get("results", [])):
+        if res.get("error"):
+            log.warning("typesense search %s: %s", c, res["error"])
+            continue
+        fields = SEARCH_SPEC[c]["query_by"].split(",")
+        hits = [_shape(c, h["document"], _best_snippet(h, fields), h.get("text_match")) for h in res.get("hits", [])]
+        if hits:
+            groups[c] = hits
+            total += res.get("found", len(hits))
+    return {"query": q, "engine": "typesense", "semantic": semantic, "groups": groups, "total": total,
+            "took_ms": int((time.time() - t0) * 1000)}
+
+
+def local_search(patient_id: str, q: str, visits: list[dict]) -> dict:
+    """Fallback when Typesense is unreachable: plain matching over the backup files (+ the same synonyms)."""
+    import difflib
+    import html as _html
+    import re as _re
+    q = (q or "").strip()
+    words = [w for w in _re.findall(r"\w+", q.lower()) if len(w) > 1]
+    terms = set(words) | ({q.lower()} if q else set())
+    for syn in SYNONYMS:                       # expand with the same synonyms Typesense uses
+        group = [s.lower() for s in syn["synonyms"]]
+        root = (syn.get("root") or "").lower()
+        if root and root in q.lower():
+            terms |= set(group)
+        elif not root and any(g in q.lower() for g in group):
+            terms |= set(group)
+
+    def hit(text: str) -> str:
+        t = text or ""
+        low = t.lower()
+        found = [x for x in terms if x and x in low]
+        if not found:                          # small typos: compare words
+            toks = _re.findall(r"\w+", low)
+            for w in words:
+                if len(w) >= 5 and difflib.get_close_matches(w, toks, n=1, cutoff=0.8):
+                    found.append(difflib.get_close_matches(w, toks, n=1, cutoff=0.8)[0])
+        if not found:
+            return ""
+        # one pass, longest terms first, so "squats" isn't marked twice
+        pat = _re.compile("|".join(_re.escape(x) for x in sorted(set(found), key=len, reverse=True)), _re.I)
+        m = pat.search(t)
+        if m and len(t) > 220:                 # show the part around the first match, not the start
+            a = max(0, m.start() - 90); b = min(len(t), m.end() + 130)
+            t = ("…" if a else "") + t[a:b] + ("…" if b < len(t) else "")
+        parts, last = [], 0
+        for m in pat.finditer(t):
+            parts += [_html.escape(t[last:m.start()]), "<mark>", _html.escape(m.group(0)), "</mark>"]
+            last = m.end()
+        parts.append(_html.escape(t[last:]))
+        return "".join(parts)
+
+    groups: dict[str, list] = {}
+    for v in visits:
+        if v.get("patient_id") != patient_id:
+            continue
+        for coll, docs in build_documents(v).items():
+            fields = SEARCH_SPEC[coll]["query_by"].split(",")
+            for d in docs:
+                for f in fields:
+                    val = d.get(f)
+                    val = "; ".join(val) if isinstance(val, list) else val
+                    snip = hit(val or "")
+                    if snip:
+                        r = _shape(coll, d, "")
+                        r["snippet_html"] = snip
+                        groups.setdefault(coll, []).append(r)
+                        break
+    for k in groups:
+        groups[k] = groups[k][: SEARCH_SPEC[k]["per_page"]]
+    return {"query": q, "engine": "local", "semantic": False, "groups": groups,
+            "total": sum(len(x) for x in groups.values()), "took_ms": 0}
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "setup":
         setup(reset="--reset" in sys.argv)
     elif cmd == "reindex":
         reindex()
+    elif cmd == "synonyms":
+        push_synonyms()
     else:
         print(__doc__)

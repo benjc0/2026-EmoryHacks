@@ -23,6 +23,7 @@ from pydantic import BaseModel
 
 import config
 import extract
+import notes_merge
 import integration
 import search_index
 import storage
@@ -119,7 +120,7 @@ class Visit:
         self.dirty = False
         try:
             out = await extract.extract_notes(self.utterances, self.questions,
-                                              self.doctor_lang, self.patient_lang)
+                                              self.doctor_lang, self.patient_lang, previous=self.notes)
         except Exception as e:
             log.warning("extraction failed: %s", e)
             await self.emit({"type": "status", "level": "warn", "text": "Notes update failed, retrying soon"})
@@ -132,7 +133,7 @@ class Visit:
             s = statuses.get(q["id"])
             if s and rank[s["status"]] > rank[q["status"]]:
                 q["status"], q["evidence"] = s["status"], s.get("evidence")
-        self.notes = data
+        self.notes = notes_merge.merge_notes(self.notes, data)   # update/add, never silently drop
         await self.push_notes()
         await self.save()
         if data.get("wrapping_up"):

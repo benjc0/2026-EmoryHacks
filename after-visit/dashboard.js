@@ -10,6 +10,7 @@ import {
 import { exerciseArt } from './js/exerciseArt.js';
 import { esc } from './js/escapeHtml.js';
 import { visitConnection } from './js/visitConnection.js';
+import { mountVisitSearch } from './js/visitSearch.js';   // Typesense search card
 
 const $ = (s) => document.querySelector(s);
 const today = new Date();
@@ -40,6 +41,7 @@ const prescription = (e) => `${dose(e)}${e.mode === 'precise' ? `, aim for ${e.t
 let data = readData();
 let opener = null;
 
+let visitSearch = null;
 async function loadVisitData() {
   try {
     const res = await fetch(`${API}/dashboard`);
@@ -57,6 +59,7 @@ async function loadVisitData() {
   const pending = [];
   for (const q of local) { if (!V.questions.some((s) => s.id === q.id)) { try { V.questions.push(await postQuestion(q.text, q.id)); } catch { pending.push(q); } } }
   if (local.length) { data.questions = pending; persist(); }
+  (visitSearch ??= mountVisitSearch({ api: API })).update(V);   // search card appears once visits exist
   render(); route(); addVisitButtons();
   if (params.get('visit_id')) notice('Your visit is saved. Your plan, medicines and questions are up to date.');
   else if (V.pt_plan) notice(`Your exercise plan from your visit on ${V.pt_plan.createdAt} is ready.`);
@@ -283,7 +286,7 @@ document.addEventListener('click', async (e) => {
   if (b.hasAttribute('data-session')) session(remaining().map((x) => x.id));
   if (b.dataset.ask) { location.hash = ''; $('#question').value = `About ${b.dataset.ask}: `; setTimeout(() => $('#question').focus(), 0); }
   if (b.hasAttribute('data-reset')) {
-    if (!confirm(`Erase all demo data for ${PATIENT_ID}?\n\nThis clears completed exercises and questions on this device${V ? ', and the visits, plan, questions and home sessions saved on the visit server.' : '.'}`)) return;
+    if (!confirm(`Erase all demo data for ${PATIENT_ID}?\n\nThis clears completed exercises and questions on this device${V ? ', and the visits, plan, questions, home sessions and search data (Typesense) saved on the visit server. Search will be empty until the next visit.' : '.'}`)) return;
     let serverOk = true;
     if (V) { try { const r = await fetch(`${API}?confirm=yes`, { method: 'DELETE' }); serverOk = r.ok; } catch { serverOk = false; } }
     data = { ...data, questions: [], completions: [] }; persist();
