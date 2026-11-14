@@ -151,3 +151,14 @@ dialog::backdrop { background: rgba(0,0,0,.55); }
 .spinner { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent);
            animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.backlink { display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 14px; }
+
+.demo-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.nitem.ex .dose { font-size: 1.15rem; font-weight: 700; margin-top: 4px; }
+.limit { color: var(--warn); font-weight: 700; margin-top: 4px; }
+.cues { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: .92rem; }
+.plan-note { color: var(--accent); font-weight: 600; margin: 4px 2px 0; font-size: .9rem; }
+
+.backtop { align-self: flex-start; color: var(--accent); font-weight: 700; text-decoration: none; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }

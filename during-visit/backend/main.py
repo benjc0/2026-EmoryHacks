@@ -167,6 +167,14 @@ class Visit:
         await self.interp.start()
 
     async def run_demo(self, scenario: str | None = None):
+        try:
+            await self._run_demo(scenario)
+        except Exception as e:   # never hang silently on "Listening..."
+            log.exception("demo failed")
+            await self.emit({"type": "status", "level": "warn",
+                             "text": f"Demo failed: {e}. Check that all backend files are the latest version."})
+
+    async def _run_demo(self, scenario: str | None = None):
         t0 = time.time()
         script, _ = pick_demo(self.patient_lang, scenario)
         for delay, speaker, original, translated in script:
@@ -326,6 +334,10 @@ async def _finish_visit(v: "Visit"):
         else:
             v.summary = results[0].model_dump(mode="json")
     await v.save()                      # backup first, so nothing is lost if Typesense fails
+    try:
+        await asyncio.to_thread(integration.sync_questions_after_visit, v.record())
+    except Exception as e:
+        log.warning("question sync failed: %s", e)
     await integration.notify_main_app(v.record())
     if config.TYPESENSE_URL:
         await _index_in_background(v)
