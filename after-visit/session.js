@@ -3,12 +3,14 @@
 //
 // Flow per exercise: setup (are you in frame?) -> 1.5 s in frame -> 3-2-1 -> recording starts on its own
 // -> reps are counted and scored -> after the last rep the video is closed and the next exercise is offered.
-import { DEMO_PLAN, planExercises, planExercisesFromVisit, selectExercises } from './js/plan.js';
+import { DEMO_PLAN, planExercises } from './js/plan.js';
 import { SessionLog } from './js/sessionLog.js';
 import { ExerciseTracker } from './js/exerciseTracker.js';
 import { store } from './js/store.js';
 import { drawPose } from './js/draw.js';
 import { loadPose, openCamera, stopStream, Recorder, startPoseLoop } from './js/tracker.js';
+import { visitConnection } from './js/visitConnection.js';
+import { readData, writeData, recordCompletion } from './js/dashboardData.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -18,15 +20,24 @@ const QUALITY = { good: ['i-check', 'Good'], fair: ['i-tilde', 'Fair'], poor: ['
 const exIcon = (ex) => (ex.joint.includes('knee') ? 'i-squat' : 'i-arm');
 const JOINT_WORD = { shoulder: 'shoulder', knee: 'knee', elbow: 'elbow', hip: 'hip' };
 
-const SCREENS = ['plan', 'live', 'between', 'done'];
+const SCREENS = ['choice', 'plan', 'live', 'between', 'done'];
 function show(name) {
   for (const s of SCREENS) $(`#screen-${s}`).hidden = s !== name;
   document.querySelector('meta[name="theme-color"]').content = name === 'live' ? '#0b1620' : '#F4F0E2';
   scrollTo(0, 0);
 }
 
+$('#choose-tracking').addEventListener('click', () => {
+  show('plan');
+  $('#change-mode').focus();
+});
+$('#change-mode').addEventListener('click', () => {
+  show('choice');
+  $('#choose-tracking').focus();
+});
+
 // ---------------------------------------------------------------- voice (chunk 3 makes this smarter)
-let voiceOn = true;
+let voiceOn = false;
 function speak(text) {
   if (!voiceOn || !window.speechSynthesis || !text) return;
   speechSynthesis.cancel();
@@ -34,22 +45,23 @@ function speak(text) {
 }
 
 // ---------------------------------------------------------------- 1. plan
-// Prefer the therapist's actual plan from the visit server (saved by dashboard.js under
-// 'visitCopilot.plan' once it loads), then narrow to just the exercises the dashboard linked to
-// (?exercises=id,id), falling back to the fixed demo plan if neither is available/valid.
-function loadVisitPlan() {
-  try {
-    const raw = localStorage.getItem('visitCopilot.plan');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-const visitPlan = loadVisitPlan();
-const PLAN = visitPlan || DEMO_PLAN;
-const EXS = selectExercises(
-  visitPlan ? planExercisesFromVisit(visitPlan) : planExercises(PLAN),
-  new URLSearchParams(location.search).get('exercises'),
-);
+let browserStorage; try { browserStorage = localStorage; } catch {}
+const connection = visitConnection(location.href, browserStorage);
+let PLAN = DEMO_PLAN;
+try {
+  const cached = JSON.parse(browserStorage?.getItem('visitCopilot.plan') || 'null');
+  if (cached && cached.patientId === connection.patientId && Array.isArray(cached.exercises)) PLAN = cached;
+} catch {}
+const selected = new URLSearchParams(location.search).get('exercises');
+if (selected) PLAN = { ...PLAN, exercises: PLAN.exercises.filter(ex => selected.split(',').includes(ex.id)) };
+const EXS = planExercises(PLAN);
+// Keep the same patient and backend when returning from either training path.
+const contextQuery = new URLSearchParams({ patient_id: connection.patientId, server: connection.server });
+for (const link of document.querySelectorAll('a[href="index.html"]')) link.href = `index.html?${contextQuery}`;
+document.querySelector('a[href="coach-test.html"]').href = `coach-test.html?${contextQuery}`;
+$('#start').disabled = EXS.length === 0;
+const painLimit = PLAN.program?.pain_stop_level ?? 4;
+$('#screen-plan .safety span').textContent = `Stop and rest if pain goes above ${painLimit} out of 10, or if you feel dizzy. ${(PLAN.program?.precautions || []).join(' ')}`;
 
 function renderPlan() {
   const minutes = Math.max(3, Math.round(EXS.reduce((s, e) => s + e.reps * 5 + 40, 0) / 60));
@@ -327,6 +339,13 @@ async function finishSession() {
   active = false;
   const summary = log.toRecord();
   const t = summary.totals;
+  try {
+    let progress = readData();
+    for (const ex of summary.exercises) {
+      if (!ex.skipped) progress = recordCompletion(progress, { exercise_id: ex.id, recorded_at: summary.startedAt, reps_target: ex.repsTarget, summary: ex.summary });
+    }
+    writeData(progress);
+  } catch (err) { console.error('Could not update dashboard progress', err); }
   $('#done-sub').textContent = t.reps ? `${t.good} of ${t.reps} reps were good.` : 'No reps were counted this time.';
   $('#done-list').innerHTML = summary.exercises.map((e) => `<li><span>${esc(e.name)}</span>${e.skipped
     ? '<span class="status status--fair">Skipped</span>'
@@ -347,6 +366,18 @@ async function finishSession() {
     console.error(err);
     saved.classList.add('err');
     saved.textContent = "Couldn't save this session. There may not be enough space on this phone.";
+  }
+  // Save the result to the same patient record used by the dashboard.
+  if (PLAN.source === 'during-visit' || connection.server) {
+    try {
+      const response = await fetch(`${connection.server}/api/pt/sessions?patient_id=${encodeURIComponent(connection.patientId)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(summary),
+      });
+      if (!response.ok) throw new Error(response.status);
+    } catch (err) {
+      console.error('Could not sync home session', err);
+      saved.textContent += ' Your visit record could not be updated. This session remains on this device.';
+    }
   }
 }
 $('#again').addEventListener('click', () => show('plan'));

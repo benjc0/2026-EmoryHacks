@@ -9,6 +9,7 @@ import {
 } from './js/dashboardData.js';
 import { exerciseArt } from './js/exerciseArt.js';
 import { esc } from './js/escapeHtml.js';
+import { visitConnection } from './js/visitConnection.js';
 
 const $ = (s) => document.querySelector(s);
 const today = new Date();
@@ -23,17 +24,15 @@ const exIcon = (ex) => (ex.id === 'mini-squat' ? 'squat' : ex.joint.includes('kn
 // both are remembered on this device).
 const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
 const params = new URLSearchParams(location.search);
-const PATIENT_ID = params.get('patient_id') || store.get('visitCopilot.patientId') || 'demo-patient';
-const SERVER = (params.get('server') ?? store.get('visitCopilot.server') ?? '').replace(/\/$/, '');
-if (params.get('patient_id')) store.set('visitCopilot.patientId', PATIENT_ID);
-if (params.get('server')) store.set('visitCopilot.server', SERVER);
-const API = `${SERVER}/api/patients/${encodeURIComponent(PATIENT_ID)}`;
+let browserStorage; try { browserStorage = localStorage; } catch {}
+const { patientId: PATIENT_ID, server: SERVER, api: API, visitUrl: VISIT_URL } = visitConnection(location.href, browserStorage);
 
 let plan = planExercises();          // sample plan until the visit server answers
 let V = null;                        // dashboard data from the visit server (null = offline / no server)
 let clinician = 'Dr. Lee';           // sample name; replaced by the real clinician from the visit
 const prog = () => V?.pt_plan?.program || {};
 
+/** "2 sets of 8 reps, 2× a day" (sets and times a day only when the visit plan gives them). */
 const dose = (e) => `${e.sets > 1 ? `${e.sets} sets of ` : ''}${e.reps} reps${e.perDay ? `, ${e.perDay}× a day` : ''}`;
 /** The short line under an exercise: dose, target (precise mode), side. */
 const prescription = (e) => `${dose(e)}${e.mode === 'precise' ? `, aim for ${e.target}°` : ''}${e.holdMs ? `, hold ${e.holdMs / 1000} s` : ''}${e.side && e.side !== 'auto' ? `, ${e.side} side` : ''}`;
@@ -47,15 +46,17 @@ async function loadVisitData() {
     if (!res.ok) throw new Error(res.status);
     V = await res.json();
   } catch { V = null; return; }      // offline or no server: keep the sample dashboard
-  if (V.pt_plan?.exercises?.length) {
+  V.questions ??= [];
+  if (V.pt_plan) {
     plan = planExercisesFromVisit(V.pt_plan);
     store.set('visitCopilot.plan', JSON.stringify(V.pt_plan));   // so the session page can use the same plan
-  }
+  } else { try { localStorage.removeItem('visitCopilot.plan'); } catch {} }
   clinician = V.clinician || (V.has_visits ? 'your care team' : clinician);
   // Questions written on this device before the server was reachable: send them too.
   const local = data.questions || [];
-  for (const q of local) { if (!V.questions.some((s) => s.id === q.id)) { try { V.questions.push(await postQuestion(q.text, q.id)); } catch {} } }
-  if (local.length) { data.questions = []; persist(); }
+  const pending = [];
+  for (const q of local) { if (!V.questions.some((s) => s.id === q.id)) { try { V.questions.push(await postQuestion(q.text, q.id)); } catch { pending.push(q); } } }
+  if (local.length) { data.questions = pending; persist(); }
   render(); route(); addVisitButtons();
   if (params.get('visit_id')) notice('Your visit is saved. Your plan, medicines and questions are up to date.');
   else if (V.pt_plan) notice(`Your exercise plan from your visit on ${V.pt_plan.createdAt} is ready.`);
@@ -65,7 +66,7 @@ async function postQuestion(text, id) {
   if (!res.ok) throw new Error(res.status);
   return res.json();
 }
-const questions = () => (V ? V.questions : data.questions);
+const questions = () => V ? [...V.questions, ...data.questions.filter(q => !V.questions.some(s => s.id === q.id))] : data.questions;
 
 // "Asked" ticks are kept on this device for both local and server questions.
 const askedKey = `visitCopilot.asked.${PATIENT_ID}`;
@@ -75,25 +76,24 @@ const saveAsked = () => store.set(askedKey, JSON.stringify([...asked]));
 // ---------------------------------------------------------------- open Visit Copilot
 // Visit Copilot runs on the same server as the API (SERVER, or this site if empty). The link carries the patient,
 // their languages, and a way back here; their saved questions are preloaded by Visit Copilot itself.
-const VISIT_URL = params.get('visit_url') || store.get('visitCopilot.visitUrl') || (SERVER ? `${SERVER}/` : '/');
-if (params.get('visit_url')) store.set('visitCopilot.visitUrl', VISIT_URL);
+// The backend serves this dashboard at /pt/. A standalone local dashboard needs
+// a separate backend port so the visit link doesn't just reopen the dashboard.
 function visitLink() {
   const back = new URL(location.href); back.hash = ''; for (const k of ['visit_id', 'return_url']) back.searchParams.delete(k);
   const q = new URLSearchParams({ patient_id: PATIENT_ID, return_url: back.toString() });
   if (V?.patient_lang) q.set('patient_lang', V.patient_lang);
   if (V?.doctor_lang) q.set('doctor_lang', V.doctor_lang);
   if (V?.clinician && V.clinician !== 'your care team') q.set('provider', V.clinician);
+  for (const question of data.questions) q.append('q', question.text);
   return `${VISIT_URL}${VISIT_URL.includes('?') ? '&' : '?'}${q}`;
 }
 function addVisitButtons() {
-  // Only offer the links when Visit Copilot actually answered (or its address was given explicitly).
-  // Otherwise they would point back at this page (e.g. both apps started on the same port).
-  const known = !!V || !!params.get('visit_url') || !!store.get('visitCopilot.visitUrl');
+  // Keep starting a visit available even before the API answers.
   for (const id of ['visit-copilot-link', 'visit-copilot-questions']) {
     const el = document.getElementById(id);
     if (!el) continue;
-    el.hidden = !known;
-    if (known) el.href = visitLink();
+    el.hidden = false;
+    el.href = visitLink();
   }
 }
 
@@ -108,7 +108,7 @@ function persist() {
 }
 
 const remaining = () => plan.filter((e) => !completedIds(data, date).has(e.id));
-function session(ids) { if (ids.length) location.href = `session.html?exercises=${encodeURIComponent(ids.join(','))}`; }
+function session(ids) { if (ids.length) location.href = `session.html?${new URLSearchParams({ exercises: ids.join(','), patient_id: PATIENT_ID, server: SERVER })}`; }
 
 // Next visit + medicine: live from the visit when there is one, otherwise the sample care plan.
 const medsList = () => (V?.has_visits ? V.medications : [{ name: SAMPLE_CARE.medicine.name, frequency: SAMPLE_CARE.medicine.when }]);
@@ -296,8 +296,8 @@ document.addEventListener('click', async (e) => {
   }
   if (b.dataset.remove) {
     const id = b.dataset.remove;
-    if (V) {
-      try { await fetch(`${API}/questions/${encodeURIComponent(id)}`, { method: 'DELETE' }); V.questions = V.questions.filter((q) => q.id !== id); }
+    if (V && V.questions.some(q => q.id === id)) {
+      try { const res = await fetch(`${API}/questions/${encodeURIComponent(id)}`, { method: 'DELETE' }); if (!res.ok) throw new Error(res.status); V.questions = V.questions.filter((q) => q.id !== id); }
       catch { notice('Could not reach your clinic. Try again later.'); }
     } else { data.questions = data.questions.filter((q) => q.id !== id); persist(); }
     asked.delete(id); saveAsked();
@@ -366,7 +366,7 @@ $('#theme').onclick = () => { dark = !dark; theme(); };
 theme();
 
 addEventListener('hashchange', route);
-addEventListener('pageshow', () => { data = readData(); render(); });
+addEventListener('pageshow', (event) => { data = readData(); render(); if (event.persisted) loadVisitData(); });
 render();
 route();
 addVisitButtons();

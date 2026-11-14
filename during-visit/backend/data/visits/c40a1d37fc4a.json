@@ -1,0 +1,132 @@
+{
+  "id": "c40a1d37fc4a",
+  "patient_id": "demo-patient",
+  "provider": "",
+  "specialty": "",
+  "doctor_lang": "en",
+  "patient_lang": "en",
+  "started_at": 1794690787.791892,
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Can I still have a glass of wine with dinner?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    },
+    {
+      "id": "q2",
+      "text": "Do I need to stop taking ibuprofen?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    },
+    {
+      "id": "q3",
+      "text": "Is it safe for me to drive?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    },
+    {
+      "id": "q4",
+      "text": "Will the new medicine make me dizzy?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    }
+  ],
+  "notes": {
+    "diagnoses": [],
+    "medications": [],
+    "exercises": [],
+    "care_items": [],
+    "questions": [],
+    "wrapping_up": false
+  },
+  "utterances": [
+    {
+      "id": "cde5251536",
+      "speaker": "doctor",
+      "original": "Good morning, Mr. Johnson. I'm Dr. Patel. How have you been feeling since your last visit?",
+      "translated": "Good morning, Mr. Johnson. I'm Dr. Patel. How have you been feeling since your last visit?",
+      "t": 0.9951345920562744
+    },
+    {
+      "id": "2576b3e6e2",
+      "speaker": "patient",
+      "original": "Mostly okay. But my heart sometimes flutters, and I get tired walking up the stairs.",
+      "translated": "Mostly okay. But my heart sometimes flutters, and I get tired walking up the stairs.",
+      "t": 3.9858107566833496
+    },
+    {
+      "id": "e830b7937c",
+      "speaker": "doctor",
+      "original": "Your monitor results came back. The fluttering is atrial fibrillation. It's an irregular heartbeat, and it raises the risk of stroke.",
+      "translated": "Your monitor results came back. The fluttering is atrial fibrillation. It's an irregular heartbeat, and it raises the risk of stroke.",
+      "t": 7.474165678024292
+    },
+    {
+      "id": "cab2f03709",
+      "speaker": "patient",
+      "original": "A stroke? That sounds serious.",
+      "translated": "A stroke? That sounds serious.",
+      "t": 11.484708309173584
+    },
+    {
+      "id": "d65c3f149c",
+      "speaker": "doctor",
+      "original": "It's very manageable. I'm starting you on apixaban, a blood thinner. Five milligrams, twice a day, morning and evening. Don't skip doses.",
+      "translated": "It's very manageable. I'm starting you on apixaban, a blood thinner. Five milligrams, twice a day, morning and evening. Don't skip doses.",
+      "t": 14.991863489151001
+    },
+    {
+      "id": "f7b4c6326f",
+      "speaker": "doctor",
+      "original": "Your blood pressure is also high today, 152 over 94. I'm increasing your lisinopril from 10 milligrams to 20 milligrams, once a day.",
+      "translated": "Your blood pressure is also high today, 152 over 94. I'm increasing your lisinopril from 10 milligrams to 20 milligrams, once a day.",
+      "t": 18.992083311080933
+    },
+    {
+      "id": "1dc97d8493",
+      "speaker": "doctor",
+      "original": "Please stop taking ibuprofen or Advil. With the blood thinner, it raises your bleeding risk. Use Tylenol for pain instead.",
+      "translated": "Please stop taking ibuprofen or Advil. With the blood thinner, it raises your bleeding risk. Use Tylenol for pain instead.",
+      "t": 22.973182916641235
+    },
+    {
+      "id": "507a511e43",
+      "speaker": "doctor",
+      "original": "I'd like you to walk thirty minutes a day, five days a week, at a pace where you can still talk. And check your blood pressure at home every morning and write it down.",
+      "translated": "I'd like you to walk thirty minutes a day, five days a week, at a pace where you can still talk. And check your blood pressure at home every morning and write it down.",
+      "t": 26.981033325195312
+    },
+    {
+      "id": "8bb9c662ec",
+      "speaker": "doctor",
+      "original": "We'll do a blood test in one week to check your kidneys after the dose change, and I'll see you back here in three months.",
+      "translated": "We'll do a blood test in one week to check your kidneys after the dose change, and I'll see you back here in three months.",
+      "t": 30.9984188079834
+    },
+    {
+      "id": "4483ceeb47",
+      "speaker": "doctor",
+      "original": "Call us right away if you notice black stools, blood in your urine, or bruising that won't stop. And call 911 if you have face drooping, arm weakness, or trouble speaking.",
+      "translated": "Call us right away if you notice black stools, blood in your urine, or bruising that won't stop. And call 911 if you have face drooping, arm weakness, or trouble speaking.",
+      "t": 34.477648973464966
+    },
+    {
+      "id": "3b266ee487",
+      "speaker": "doctor",
+      "original": "Alright, I think that's everything for today. Do you have any other questions before you go?",
+      "translated": "Alright, I think that's everything for today. Do you have any other questions before you go?",
+      "t": 37.47922492027283
+    }
+  ],
+  "summary": null,
+  "summary_pending": true,
+  "pt_app_url": "/pt/",
+  "summary_failed": true,
+  "ended": true,
+  "saved_at": 1794690832.5038202
+}

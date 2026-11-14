@@ -43,9 +43,12 @@ DATA_DIR = os.getenv("DATA_DIR", str(Path(__file__).parent / "data"))
 # ---- Hand-off to the main app
 # If set, the full visit is POSTed here as JSON when it ends: {"event": "visit.ended", "visit": {...}}
 MAIN_APP_WEBHOOK_URL = os.getenv("MAIN_APP_WEBHOOK_URL", "")
-# Optional: folder of the PT camera app to serve at /pt on this server (absolute path), and/or the URL the
-# visit summary's "Start home exercises" button opens (patient_id is added). Leave both empty to hide the button.
-PT_APP_DIR = os.getenv("PT_APP_DIR", "")
+# Serve the sibling dashboard by default. A valid configured folder takes precedence;
+# fall back to the checkout when an old machine's absolute path no longer exists.
+_bundled_pt = Path(__file__).resolve().parents[2] / "after-visit"
+PT_APP_DIR = os.getenv("PT_APP_DIR", str(_bundled_pt))
+if PT_APP_DIR and not Path(PT_APP_DIR).is_dir() and _bundled_pt.is_dir():
+    PT_APP_DIR = str(_bundled_pt)
 PT_APP_URL = os.getenv("PT_APP_URL", "/pt/" if PT_APP_DIR else "")
 # Allow DELETE /api/patients/{id} (the dashboard's "Reset demo data"). Defaults off;
 # set ALLOW_RESET=true in .env for local/demo use. Turn off for anything real.

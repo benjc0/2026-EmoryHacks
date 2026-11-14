@@ -2,7 +2,7 @@
 # structured-output APIs), and `>=1.70` alone let pip silently resolve a major-version-later release.
 google-genai>=1.70,<4
 fastapi>=0.115
-uvicorn[standard]>=0.30
+uvicorn>=0.30
 httpx>=0.27
 python-dotenv>=1.0
 python-multipart>=0.0.9
