@@ -10,6 +10,7 @@ import {
 import { exerciseArt } from './js/exerciseArt.js';
 import { esc } from './js/escapeHtml.js';
 import { visitConnection } from './js/visitConnection.js';
+import { coachUrl, coachHealth, startCall, watchCall, UNAVAILABLE } from './js/coachConnection.js';
 
 const $ = (s) => document.querySelector(s);
 const today = new Date();
@@ -26,6 +27,7 @@ const store = { get: (k) => { try { return localStorage.getItem(k); } catch { re
 const params = new URLSearchParams(location.search);
 let browserStorage; try { browserStorage = localStorage; } catch {}
 const { patientId: PATIENT_ID, server: SERVER, api: API, visitUrl: VISIT_URL } = visitConnection(location.href, browserStorage);
+const COACH = coachUrl(location.href, browserStorage);   // the AI coach's call service (see js/coachConnection.js)
 
 let plan = planExercises();          // sample plan until the visit server answers
 let V = null;                        // dashboard data from the visit server (null = offline / no server)
@@ -166,6 +168,7 @@ function render() {
   const allDone = count === plan.length;
   $('#start').textContent = allDone ? 'Today’s plan complete' : 'Start session';
   $('#start').disabled = allDone;
+  $('#coach-open').disabled = allDone;
 
   // next visit + medicine (the first of each; the day view lists them all)
   const appts = apptsList(), meds = medsList();
@@ -257,10 +260,49 @@ function helpView() {
     <section class="day-sec"><h3>Demo tools</h3><button class="btn btn--secondary" type="button" data-reset>Reset demo data</button></section>`;
 }
 
+// Train with your AI coach: the coach calls the patient on FaceTime and talks them through today's plan.
+function coachView() {
+  $('#detail').className = '';
+  $('#detail-title').textContent = 'Train with your coach';
+  $('#detail-sub').textContent = 'Your AI coach talks you through today’s exercises and counts your reps out loud.';
+  $('#detail-body').innerHTML = `
+    <ol class="coach-steps"><li>Prop your phone up so your coach can see you from your head to your hips.</li><li>Tap <b>Call my iPhone</b> and answer the FaceTime call.</li><li>Follow along. Your coach tells you how each rep went.</li></ol>
+    <div class="coach-status" id="coach-status" role="status" aria-live="polite">${icon('phone', 'icon icon--sm')}<span>Checking that your coach is ready…</span></div>
+    <div class="coach-actions">
+      <button class="btn btn--accent btn--lg" type="button" id="coach-call" data-call disabled>Call my iPhone</button>
+      <a class="btn btn--secondary btn--lg coach-link" id="coach-browser" href="${esc(COACH)}/coach-test.html" target="_blank" rel="noopener" hidden>Talk to your coach in this browser</a>
+      <button class="btn btn--ghost" type="button" data-session ${remaining().length ? '' : 'disabled'}>Start session on my own</button>
+    </div>
+    <p class="fine">Your coach is an AI, not your therapist. It knows today’s plan, and nothing else about you.</p>`;
+  coachHealth(COACH).then((ready) => {
+    if (!$('#coach-call')) return;                       // the view was closed meanwhile
+    coachStatus(ready ? 'Your coach is ready. Tap Call my iPhone when you are.' : UNAVAILABLE, ready ? 'ok' : 'err');
+    $('#coach-call').disabled = !ready;
+    $('#coach-browser').hidden = !ready;
+  });
+}
+function coachStatus(text, kind = '') {
+  const el = document.getElementById('coach-status');
+  if (!el) return;
+  el.className = `coach-status ${kind}`;
+  el.querySelector('span').textContent = text;
+}
+async function callCoach() {
+  const btn = $('#coach-call');
+  btn.disabled = true;
+  coachStatus('Asking your coach to call…');
+  const r = await startCall(COACH);
+  if (!r.ok) { coachStatus(r.message, 'err'); btn.disabled = false; return; }
+  coachStatus(r.message);
+  const end = await watchCall(COACH, r.callId, (u) => coachStatus(u.message, u.state === 'ready' ? 'ok' : ''));
+  if (end?.state === 'terminal') { coachStatus(end.message); const b = document.getElementById('coach-call'); if (b) b.disabled = false; }
+}
+
 function route() {
   const h = location.hash;
   if (!h) { if ($('#detail').open) $('#detail').close(); return; }
   if (h === '#plan') planView();
+  else if (h === '#coach') coachView();
   else if (/^#day=\d{4}-\d{2}-\d{2}$/.test(h)) { if (!dayView(h.slice(5))) return; }
   else if (h === '#help') helpView();
   else return;
@@ -272,6 +314,7 @@ $('#detail').addEventListener('close', () => opener?.focus());
 $('#close').onclick = () => { location.hash = ''; };
 $('#expand').onclick = () => { location.hash = 'plan'; };
 $('#start').onclick = () => session(remaining().map((e) => e.id));
+$('#coach-open').onclick = () => { location.hash = 'coach'; };
 
 // ---------------------------------------------------------------- clicks (days, plan buttons, questions, reset)
 document.addEventListener('click', async (e) => {
@@ -279,6 +322,7 @@ document.addEventListener('click', async (e) => {
   if (!b) return;
   if (b.dataset.day) location.hash = `day=${b.dataset.day}`;
   if (b.hasAttribute('data-help')) location.hash = 'help';
+  if (b.hasAttribute('data-call')) callCoach();
   if (b.dataset.exercise) session([b.dataset.exercise]);
   if (b.hasAttribute('data-session')) session(remaining().map((x) => x.id));
   if (b.dataset.ask) { location.hash = ''; $('#question').value = `About ${b.dataset.ask}: `; setTimeout(() => $('#question').focus(), 0); }

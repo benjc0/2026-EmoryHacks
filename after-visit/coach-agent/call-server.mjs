@@ -11,11 +11,28 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as pause } from 'node:timers/promises';
 import { AccessToken, AgentDispatchClient, RoomServiceClient } from 'livekit-server-sdk';
-import { bridgeReadyMetadata, buildCallRequest, callState, findAgent, patientMessage, readConfig } from './outbound.mjs';
+import { bridgeReadyMetadata, buildCallRequest, callState, corsOrigin, findAgent, patientMessage, readConfig } from './outbound.mjs';
 
 const { config, missing } = readConfig();
 const calls = new Map(); // callId -> { room, state, status }
 let busy = false;
+
+// The coach speaks with Gemini. If Google rejects its key, the coach is silent, Chert's Mac hangs up after 10 s, and the
+// patient gets a call that fails. So "ready" includes a quick key check (cached for a minute). If we can't tell
+// (offline), we don't block.
+const UNAVAILABLE = "Your coach isn't available right now. You can still do today's session on your own.";
+let keyCheck = { at: 0, ok: true };
+async function modelKeyOk() {
+  if (Date.now() - keyCheck.at < 60_000) return keyCheck.ok;
+  try {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1',
+      { headers: { 'x-goog-api-key': process.env.GOOGLE_API_KEY ?? '' }, signal: AbortSignal.timeout(5000) });
+    const ok = ![400, 401, 403].includes(r.status);
+    if (!ok && keyCheck.ok) console.error(`[call] Google rejected the coach's Gemini key (HTTP ${r.status}). Make a new key at https://aistudio.google.com/apikey, put it in .env.local as GOOGLE_API_KEY, then restart the coach (npm start) and this service.`);
+    keyCheck = { at: Date.now(), ok };
+  } catch { keyCheck = { at: Date.now(), ok: true }; }
+  return keyCheck.ok;
+}
 
 const rooms = config && new RoomServiceClient(config.livekitHost, config.livekitKey, config.livekitSecret);
 const dispatch = config && new AgentDispatchClient(config.livekitHost, config.livekitKey, config.livekitSecret);
@@ -147,8 +164,10 @@ async function readJson(req) {
 }
 
 function send(res, code, body) {
-  res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': config?.allowOrigin ?? 'http://localhost:8000',
-    'access-control-allow-headers': 'content-type', 'access-control-allow-methods': 'GET, POST, OPTIONS', vary: 'origin' });
+  res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': corsOrigin(config?.allowOrigins ?? [], res.req?.headers.origin),
+    'access-control-allow-headers': 'content-type', 'access-control-allow-methods': 'GET, POST, OPTIONS', vary: 'origin',
+    // Chrome asks before a public https page (mending.fit) may reach a service on this computer.
+    'access-control-allow-private-network': 'true' });
   res.end(JSON.stringify(body));
 }
 
@@ -162,7 +181,10 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
       return res.end(await readFile(afterVisit(file)));
     }
-    if (req.method === 'GET' && url.pathname === '/api/health') return send(res, 200, remote ? { ready: Boolean(config) } : config ? { ready: true } : { ready: false, missing });
+    if (req.method === 'GET' && url.pathname === '/api/health') {
+      const keyOk = config ? await modelKeyOk() : true;
+      return send(res, 200, remote ? { ready: Boolean(config) && keyOk } : config ? { ready: keyOk, ...(keyOk ? {} : { problem: 'gemini_key_rejected' }) } : { ready: false, missing });
+    }
     if (!config) return send(res, 503, { message: 'The call service is not set up yet.' });
     const remoteOk = url.pathname.startsWith('/api/test-room') || url.pathname === '/api/call-me' || url.pathname.startsWith('/api/calls/');
     if (remote && !remoteOk) return send(res, 403, { message: 'Not available from here.' });
@@ -170,6 +192,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'POST' && url.pathname === '/api/call-me') {
       if (busy) return send(res, 409, { message: "You're already on a call with your coach." });
+      if (!(await modelKeyOk())) return send(res, 503, { message: UNAVAILABLE });   // a call would connect, then fail in silence
       if (remote && !remoteCallAllowed()) return send(res, 429, { message: 'Your coach just called. Wait 2 minutes, then try again.' });
       let body = '';
       for await (const chunk of req) { body += chunk; if (body.length > 1000) break; }

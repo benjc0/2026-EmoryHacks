@@ -5,6 +5,12 @@
 // write {"chert_bridge_ready":true} into the room metadata: greet.mjs greets on exactly that signal.
 
 export const CHERT_API_BASE = 'https://app.trychert.com';
+export const DEFAULT_ORIGINS = 'http://localhost:8000,http://127.0.0.1:8000,https://mending.fit,https://www.mending.fit';
+
+/** The Access-Control-Allow-Origin value for a request from `origin`: that origin if it's allowed, else the first allowed one. */
+export function corsOrigin(allowed, origin) {
+  return allowed.includes(origin) ? origin : (allowed[0] ?? 'http://localhost:8000');
+}
 const TERMINAL = ['ended', 'failed', 'rejected'];
 const E164 = /^\+[1-9]\d{7,14}$/;
 const filled = (value) => typeof value === 'string' && value.trim() !== '' && !/YOUR_/.test(value);
@@ -29,7 +35,8 @@ export function readConfig(env = process.env) {
       lineId: env.CHERT_LINE_ID.trim(),
       phone: env.COACH_PATIENT_PHONE.trim(),
       port: Number(env.CALL_SERVER_PORT) || 8787,
-      allowOrigin: filled(env.CALL_SERVER_ORIGIN) ? env.CALL_SERVER_ORIGIN.trim() : 'http://localhost:8000',
+      // Pages allowed to ask this service for a call (comma-separated in CALL_SERVER_ORIGIN).
+      allowOrigins: (filled(env.CALL_SERVER_ORIGIN) ? env.CALL_SERVER_ORIGIN : DEFAULT_ORIGINS).split(',').map((s) => s.trim()).filter(Boolean),
     },
   };
 }

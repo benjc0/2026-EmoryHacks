@@ -45,6 +45,18 @@
 .tick { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--good); flex: none; }
 .ring { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border); flex: none; }
 .hero-foot { display: flex; flex-direction: column; gap: var(--space-3); margin-top: auto; }
+.hero-actions { display: grid; gap: var(--space-2); }
+.hero-actions .btn:disabled { opacity: .45; }
+
+/* ---------- train with your AI coach (dialog view) */
+.coach-steps { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.coach-actions { display: grid; gap: var(--space-2); }
+.coach-status { display: flex; gap: var(--space-1); align-items: flex-start; padding: var(--space-2) var(--space-3); border-radius: var(--r-tile); background: var(--chip); min-height: 48px; }
+.coach-status .icon { margin-top: 3px; flex: none; }
+.coach-status.err { background: var(--poor-bg); color: var(--poor); }
+.coach-status.ok { background: var(--good-bg); color: var(--good); }
+.coach-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; white-space: normal; text-align: center; padding: var(--space-2) var(--space-3); }
+.coach-link[hidden] { display: none; }
 .note { font-size: var(--fs-sm); color: var(--muted-on-tile); margin: 0; }
 
 /* ---------- 3 + 4. next visit and medicine */
@@ -121,6 +133,7 @@
   .day__dow--long { display: inline; }
   .ex-hero { grid-area: ex; }
   .hero-foot { flex-direction: row; justify-content: space-between; align-items: center; }
+  .hero-actions { display: flex; flex: none; gap: var(--space-2); }
   .hero-foot .btn { flex: none; width: auto; padding: 0 var(--space-5); }
   .side { grid-area: side; grid-template-rows: auto auto 1fr; }
   .pair { display: contents; }

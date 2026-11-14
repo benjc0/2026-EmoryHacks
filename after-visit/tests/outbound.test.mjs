@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bridgeReadyMetadata, buildCallRequest, callState, findAgent, httpUrl, patientMessage, readConfig } from '../coach-agent/outbound.mjs';
+import { bridgeReadyMetadata, buildCallRequest, callState, corsOrigin, findAgent, httpUrl, patientMessage, readConfig } from '../coach-agent/outbound.mjs';
 
 const env = {
   LIVEKIT_URL: 'wss://demo.livekit.cloud', LIVEKIT_API_KEY: 'k', LIVEKIT_API_SECRET: 's', AGENT_NAME: 'emory-pt-coach',
@@ -23,7 +23,15 @@ test('readConfig fills defaults: Chert host, port, page origin', () => {
   assert.equal(config.chertBase, 'https://app.trychert.com');
   assert.equal(config.livekitHost, 'https://demo.livekit.cloud');
   assert.equal(config.port, 8787);
-  assert.equal(config.allowOrigin, 'http://localhost:8000');
+  assert.deepEqual(config.allowOrigins, ['http://localhost:8000', 'http://127.0.0.1:8000', 'https://mending.fit', 'https://www.mending.fit']);
+  assert.deepEqual(readConfig({ ...env, CALL_SERVER_ORIGIN: 'https://a.test, https://b.test' }).config.allowOrigins, ['https://a.test', 'https://b.test']);
+});
+
+test('corsOrigin echoes an allowed page and never a stranger', () => {
+  const allowed = ['https://mending.fit', 'http://localhost:8000'];
+  assert.equal(corsOrigin(allowed, 'https://mending.fit'), 'https://mending.fit');
+  assert.equal(corsOrigin(allowed, 'https://evil.example'), 'https://mending.fit');   // not echoed back
+  assert.equal(corsOrigin([], undefined), 'http://localhost:8000');
 });
 
 test('httpUrl turns the agent URL into the server API URL', () => {
