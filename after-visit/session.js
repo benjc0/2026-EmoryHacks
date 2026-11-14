@@ -18,15 +18,24 @@ const QUALITY = { good: ['i-check', 'Good'], fair: ['i-tilde', 'Fair'], poor: ['
 const exIcon = (ex) => (ex.joint.includes('knee') ? 'i-squat' : 'i-arm');
 const JOINT_WORD = { shoulder: 'shoulder', knee: 'knee', elbow: 'elbow', hip: 'hip' };
 
-const SCREENS = ['plan', 'live', 'between', 'done'];
+const SCREENS = ['choice', 'plan', 'live', 'between', 'done'];
 function show(name) {
   for (const s of SCREENS) $(`#screen-${s}`).hidden = s !== name;
   document.querySelector('meta[name="theme-color"]').content = name === 'live' ? '#0b1620' : '#F4F0E2';
   scrollTo(0, 0);
 }
 
+$('#choose-tracking').addEventListener('click', () => {
+  show('plan');
+  $('#change-mode').focus();
+});
+$('#change-mode').addEventListener('click', () => {
+  show('choice');
+  $('#choose-tracking').focus();
+});
+
 // ---------------------------------------------------------------- voice (chunk 3 makes this smarter)
-let voiceOn = true;
+let voiceOn = false;
 function speak(text) {
   if (!voiceOn || !window.speechSynthesis || !text) return;
   speechSynthesis.cancel();

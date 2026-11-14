@@ -24,10 +24,37 @@
     <symbol id="i-save" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
   </svg>
 
-  <!-- 1. Today's plan -->
-  <main id="screen-plan" class="screen page" aria-labelledby="plan-title">
+  <main id="screen-choice" class="screen page" aria-labelledby="choice-title">
     <header class="topline">
       <a class="btn btn--ghost" href="index.html"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Home</a>
+    </header>
+    <div>
+      <p class="muted">Your session, your way</p>
+      <h1 id="choice-title" class="page-title">How would you like to train?</h1>
+      <p class="muted">Choose the support that feels right for you today.</p>
+    </div>
+    <div class="session-options">
+      <section class="tile session-option" aria-labelledby="tracking-title">
+        <span class="badge-icon badge-icon--blue"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg></span>
+        <h2 id="tracking-title" class="tile-title">Train on my own</h2>
+        <p class="muted">Follow your exercise plan at your own pace. Camera tracking counts your reps and records your movement.</p>
+        <p class="fine">Camera only. Recordings stay on this device.</p>
+        <button id="choose-tracking" class="btn btn--primary btn--lg" type="button">Independent Training</button>
+      </section>
+      <section class="tile session-option" aria-labelledby="ai-title">
+        <span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg></span>
+        <h2 id="ai-title" class="tile-title">Train with an AI coach</h2>
+        <p class="muted">Talk to an AI coach that guides you through your exercises, watches your form, and helps you along the way.</p>
+        <p class="fine">Camera and microphone shared with your AI coach during the call.</p>
+        <a class="btn btn--accent btn--lg" href="coach-test.html">Assisted Training</a>
+      </section>
+    </div>
+  </main>
+
+  <!-- 1. Today's plan -->
+  <main id="screen-plan" class="screen page" aria-labelledby="plan-title" hidden>
+    <header class="topline">
+      <button id="change-mode" class="btn btn--ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Session options</button>
     </header>
     <div>
       <h1 id="plan-title" class="page-title">Today's plan</h1>
@@ -48,7 +75,7 @@
     </div>
 
     <label class="switch">
-      <input type="checkbox" id="voice" checked />
+      <input type="checkbox" id="voice" />
       <span class="switch__track" aria-hidden="true"></span>
       <span><svg class="icon icon--sm" aria-hidden="true"><use href="#i-volume"/></svg>Talk me through it</span>
     </label>
