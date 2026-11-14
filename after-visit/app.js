@@ -1,7 +1,12 @@
 // Bare-bones PT session: pick an exercise -> camera + pose tracking -> auto-start recording when you're
 // in frame -> skeleton, live angle, target, rep scoring with spoken feedback -> pain check -> playback.
 // Plain ES modules, no build step. Serve this folder over http://localhost or https (camera requirement).
-import { EXERCISES } from './js/exercises.js';
+import { EXERCISES as LIBRARY } from './js/exercises.js';
+import { planExercises } from './js/plan.js';
+import { readData, writeData, recordCompletion } from './js/dashboardData.js';
+const EXERCISES = { ...LIBRARY, ...Object.fromEntries(planExercises().map(e => [e.id, e])) };
+const sessionQueue = (new URLSearchParams(location.search).get('exercises') || '').split(',').filter(id => EXERCISES[id]);
+let queuePosition = 0;
 import { analyzeFrame, chooseSide } from './js/analysis.js';
 import { RepCounter } from './js/repCounter.js';
 import { makeSmoother, round } from './js/geometry.js';
@@ -33,10 +38,11 @@ $('#note-mic').addEventListener('click', () => {
 });
 
 // ---------------------------------------------------------------- 1. pick an exercise
-let pickedId = 'shoulder-abduction';
+let pickedId = sessionQueue[0] || 'shoulder-abduction';
 function renderPicker() {
   const ul = $('#exercise-list'); ul.innerHTML = '';
   for (const [id, ex] of Object.entries(EXERCISES)) {
+    if (sessionQueue.length && id !== sessionQueue[queuePosition]) continue;
     const li = document.createElement('li');
     li.innerHTML = `<button type="button" class="ex ${id === pickedId ? 'selected' : ''}" aria-pressed="${id === pickedId}">
       <span class="icon" aria-hidden="true">${ex.icon}</span><b>${esc(ex.name)}</b>
@@ -49,6 +55,7 @@ function renderPicker() {
   $('#set-note').textContent = ex.note;
   $('#set-target').value = ex.target;
   $('#set-reps').value = ex.reps;
+  $('#set-side').value = ex.side || 'auto';
 }
 renderPicker();
 
@@ -86,7 +93,7 @@ $('#settings').addEventListener('submit', async (e) => {
   S.counters = Object.fromEntries(sides.map((sd) => [sd, new RepCounter(ex, { targetAngle: target })]));
   S.smoothers = Object.fromEntries(sides.map((sd) => [sd, makeSmoother(0.4)]));
   S.counter = S.locked ? S.counters[S.side] : null;
-  $('#sess-title').textContent = `${ex.name} · ${S.reps} reps · target ${target}°`;
+  $('#sess-title').textContent = ex.mode === 'simple' ? `${ex.name} — ${S.reps} reps` : `${ex.name} — ${S.reps} reps — target ${target}°`;
   $('#setup-text').textContent = ex.setup;
   $('#frame-check').textContent = 'Looking for you…'; $('#frame-check').className = 'frame-check';
   $('#setup').hidden = false;
@@ -94,6 +101,7 @@ $('#settings').addEventListener('submit', async (e) => {
   const lo = Math.min(ex.rest, target) - 10, hi = Math.max(ex.rest, target) + 10;
   S.pct = (a) => Math.max(0, Math.min(100, ((ex.direction === 'increase' ? a - lo : hi - a) / (hi - lo)) * 100));
   $('#bar-target').style.left = `${S.pct(target)}%`; $('#bar-fill').style.width = '0';
+  document.querySelectorAll('.metrics > div').forEach((el,i) => { if (i < 2) el.hidden = ex.mode === 'simple'; });
   show('session');
   setCoach('Opening the camera…');
   try {
@@ -140,7 +148,7 @@ function onPose(res, now) {
   const active = counter.state === 'active';
   const broken = active ? ex.checks.find((c) => fr.checks[c.id]?.violated) : null;
 
-  drawPose(overlay, lms, { highlight: { side: S.side, joint: ex.joint }, angle, mirror: true, status: broken ? 'warn' : 'ok' });
+  drawPose(overlay, lms, { highlight: { side: S.side, joint: ex.joint }, angle: ex.mode === 'simple' ? null : angle, mirror: true, status: broken ? 'warn' : 'ok' });
   if (Number.isFinite(angle)) {
     $('#m-angle').textContent = `${Math.round(angle)}°`;
     $('#bar-fill').style.width = `${S.pct(angle)}%`;
@@ -254,6 +262,8 @@ async function finish() {
     },
   };
   renderResults();
+  $('#next-exercise').hidden = !sessionQueue.length;
+  $('#next-exercise').textContent = queuePosition + 1 < sessionQueue.length ? 'Next exercise' : 'Back to dashboard';
 }
 
 function renderResults() {
@@ -313,7 +323,10 @@ $('#pain-form').addEventListener('submit', (e) => {
   R.data.pain = Number($('#pain').value);
   R.data.note = $('#note').value.trim();
   $('#pain-saved').hidden = false;
-  toast('Pain check saved. Download the tracking data to keep it.');
+  try {
+    writeData(recordCompletion(readData(), R.data));
+    toast(R.data.summary.totalReps >= R.data.reps_target ? 'Pain check saved for this session. Exercise completion saved to your dashboard.' : 'Pain check saved for this session. Finish the prescribed reps to mark this exercise done.');
+  } catch { toast('Device storage is unavailable. Download the tracking data to keep your session.'); }
 });
 
 function download(blob, name) {
@@ -324,3 +337,12 @@ const stamp = () => R.data.recorded_at.slice(0, 16).replace(/[:T]/g, '-');
 $('#dl-video').addEventListener('click', () => download(R.blob, `${R.data.exercise_id}-${stamp()}.${R.blob.type.includes('mp4') ? 'mp4' : 'webm'}`));
 $('#dl-data').addEventListener('click', () => download(new Blob([JSON.stringify(R.data)], { type: 'application/json' }), `${R.data.exercise_id}-${stamp()}.json`));
 $('#again').addEventListener('click', () => { rv.pause(); R = null; S = null; show('pick'); });
+
+$('#next-exercise').addEventListener('click', () => {
+  if (R && $('#pain-saved').hidden && !confirm('Continue without saving your pain check and dashboard progress?')) return;
+  rv.pause();
+  queuePosition++;
+  if (queuePosition >= sessionQueue.length) { location.href = 'index.html'; return; }
+  pickedId = sessionQueue[queuePosition]; R = null; S = null; renderPicker(); show('pick');
+  $('#set-title').focus();
+});

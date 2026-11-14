@@ -1,109 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>PT Session</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <!-- ============ 1. PICK AN EXERCISE ============ -->
-  <section id="screen-pick" class="screen page active">
-    <header>
-      <h1>Today's exercises</h1>
-      <p class="sub">Pick one, prop your phone up, and press Start session.</p>
-    </header>
-    <ul id="exercise-list" class="exlist"></ul>
-
-    <form id="settings" class="card stack">
-      <h2 id="set-title"></h2>
-      <p id="set-note" class="muted"></p>
-      <div class="row3">
-        <label>Target angle <input id="set-target" type="number" min="0" max="180" inputmode="numeric" /></label>
-        <label>Reps <input id="set-reps" type="number" min="1" max="50" inputmode="numeric" /></label>
-        <label>Side
-          <select id="set-side"><option value="auto">Auto</option><option value="right">Right</option><option value="left">Left</option></select>
-        </label>
-      </div>
-      <label class="check"><input type="checkbox" id="set-voice" checked /> Spoken feedback</label>
-      <button class="primary big" type="submit">▶︎ Start session</button>
-      <p class="fine">The camera runs on this device. The video is only saved if you download it at the end.</p>
-    </form>
-  </section>
-
-  <!-- ============ 2. LIVE SESSION ============ -->
-  <section id="screen-session" class="screen dark">
-    <header class="topbar">
-      <span id="rec-dot" class="dot" aria-hidden="true"></span>
-      <span id="rec-time">00:00</span>
-      <span id="sess-title" class="grow ellipsis"></span>
-      <button id="end-btn" class="chip">■ End</button>
-    </header>
-
-    <div class="stage-wrap">
-      <div id="stage" class="stage mirror">
-        <video id="cam" playsinline muted></video>
-        <canvas id="overlay"></canvas>
-        <div id="countdown" class="countdown" hidden></div>
-      </div>
-    </div>
-
-    <div class="hud">
-      <div class="metrics">
-        <div><small>Angle</small><b id="m-angle">–</b></div>
-        <div><small>Target</small><b id="m-target">–</b></div>
-        <div><small>Reps</small><b id="m-reps">0/0</b></div>
-        <div><small>Good</small><b id="m-good">0</b></div>
-      </div>
-      <div class="bar" aria-hidden="true"><div id="bar-fill"></div><div id="bar-target"></div></div>
-      <p id="coach" class="coach" role="status" aria-live="assertive">Opening the camera…</p>
-      <div id="setup" class="setup">
-        <p id="setup-text"></p>
-        <p id="frame-check" class="frame-check"></p>
-        <button id="start-now" class="secondary">Start now</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ 3. RESULTS ============ -->
-  <section id="screen-results" class="screen page wide">
-    <header class="between">
-      <div><h1 id="res-title">Session done</h1><p class="sub" id="res-sub"></p></div>
-      <button id="again" class="secondary">New session</button>
-    </header>
-
-    <div id="stats" class="stats"></div>
-
-    <form id="pain-form" class="card stack">
-      <label>How much pain did you feel? <span class="muted">0 = none, 10 = worst</span>
-        <input id="pain" type="range" min="0" max="10" value="0" />
-        <output id="pain-out" class="pain-out">0</output>
-      </label>
-      <label>Anything to tell your therapist?
-        <span class="row"><textarea id="note" rows="2"></textarea><button type="button" id="note-mic" class="secondary">🎙️</button></span>
-      </label>
-      <button class="primary">Save pain check</button>
-      <p id="pain-saved" class="ok" hidden>✓ Saved with the session data</p>
-    </form>
-
-    <div class="review">
-      <div>
-        <div id="rv-stage" class="stage"><video id="rv-video" playsinline controls></video><canvas id="rv-overlay"></canvas></div>
-        <canvas id="chart" class="chart" aria-label="Joint angle over time"></canvas>
-        <p class="fine">Shaded bands are reps: green good, amber fair, red poor. Tap the chart or a rep to jump the video.</p>
-      </div>
-      <div>
-        <table class="reps"><thead><tr><th>#</th><th>Peak</th><th>Time</th><th>Score</th><th>Feedback</th></tr></thead><tbody id="rep-rows"></tbody></table>
-        <div class="row">
-          <button id="dl-video" class="secondary">⬇︎ Video</button>
-          <button id="dl-data" class="secondary">⬇︎ Tracking data (JSON)</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <div id="toast" class="toast" role="status" hidden></div>
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Your care at home | After Visit</title><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="dashboard.css"></head>
+<body><a class="skip" href="#main">Skip to your plan</a><div class="shell">
+<header class="mast"><a href="index.html" class="brand"><span class="brand-mark" aria-hidden="true">+</span> After Visit</a><div class="row"><button class="btn btn--ghost" id="theme">Dark mode</button><button class="btn btn--secondary help" data-help>Help</button></div></header>
+<main id="main"><header class="greeting"><div><p class="eyebrow">Your care, one day at a time</p><h1>Hi, Min-jun</h1><p class="muted" id="date"></p></div><span class="chip">Sample care plan</span></header>
+<section class="tile calendar" aria-labelledby="week-title"><div class="section-head"><h2 id="week-title">This week</h2><span class="chip" id="streak"></span></div><div id="week" class="week"></div><p class="fine">Choose a day to see your care plan.</p></section>
+<div class="dashboard"><section class="hero-tile exercises" aria-labelledby="exercise-title"><div class="section-head"><span class="eyebrow">A little movement, a little progress</span><button id="expand" class="btn btn--icon" aria-label="Open today's exercises full screen"></button></div><h2 id="exercise-title">Today's exercises</h2><div class="progress-copy"><p class="display" id="progress"></p><p id="encouragement"></p></div><div class="stones" id="stones" aria-hidden="true"></div><p class="muted">Your home plan from Dr. Lee</p><div id="exercises"></div><div class="exercise-footer"><p class="fine">Have a chair or counter nearby for balance.</p><button id="start" class="btn btn--accent btn--lg">Start session</button><p class="fine">Your camera stays on your device.</p></div></section>
+<section class="tile appointments" aria-labelledby="appointment-title"><div class="section-head"><h2 id="appointment-title">Appointments</h2><span class="badge" data-icon="calendar"></span></div><p class="big-date">Nothing scheduled</p><p class="muted">Your next visit will appear here when connected to your clinic.</p></section>
+<section class="tile medicine" aria-labelledby="medicine-title"><div class="section-head"><h2 id="medicine-title">Medicine</h2><span class="badge peach" data-icon="pill"></span></div><p>No medicines in this sample plan.</p><p class="fine">Follow the instructions from your care team.</p></section>
+<section class="tile questions" aria-labelledby="questions-title"><div class="section-head"><h2 id="questions-title">Questions for next visit</h2><span class="badge" data-icon="message"></span></div><p class="fine">Keep a thought for Dr. Lee. Saved on this device; not sent to your clinic.</p><ul id="questions"></ul><form id="question-form"><label for="question">What would you like to ask?</label><div class="question-input"><input class="input" id="question" maxlength="500" placeholder="Write a question…" required aria-describedby="question-hint"><button type="button" id="mic" class="btn btn--icon" aria-label="Dictate your question"></button></div><p class="fine" id="question-hint">A short note is plenty.</p><button class="btn btn--secondary">Save question</button></form></section></div>
+<footer class="page-footer">Small steps count. Make room for rest, too.</footer></main></div>
+<dialog id="detail" aria-labelledby="detail-title"><div class="modal-head"><h2 id="detail-title"></h2><button id="close" class="btn btn--icon" aria-label="Close view"></button></div><div id="detail-body"></div></dialog><div id="notice" class="toast" role="status" hidden></div><script type="module" src="dashboard.js"></script></body></html>
