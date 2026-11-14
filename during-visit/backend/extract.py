@@ -16,6 +16,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 import config
+import exercise_library
 from config import lang_name
 
 _client: genai.Client | None = None
@@ -55,14 +56,45 @@ class Medication(BaseModel):
     explanation_patient_lang: str = Field(description="One or two plain sentences in the patient's language")
 
 
+ExerciseKey = Enum("ExerciseKey", {k: k for k in exercise_library.KEYS}, type=str)
+
+
+class Side(str, Enum):
+    left = "left"
+    right = "right"
+    both = "both"
+
+
 class Exercise(BaseModel):
-    name: str
+    name: str = Field(description="As the clinician described it")
+    exercise_key: ExerciseKey = Field(ExerciseKey.other, description="Closest standard exercise from the list; 'other' if none fits")
     body_part: Optional[str] = None
-    sets: Optional[str] = None
-    reps: Optional[str] = None
-    frequency: Optional[str] = None
+    side: Optional[Side] = Field(None, description="Which side to exercise, if stated")
+    sets: Optional[str] = Field(None, description="As said, e.g. '3'")
+    reps: Optional[str] = Field(None, description="As said, e.g. '10' or '10 each side'")
+    frequency: Optional[str] = Field(None, description="As said, e.g. 'twice a day'")
+    # numbers for the workout app (only if stated or clearly implied; never guess)
+    sets_count: Optional[int] = None
+    reps_count: Optional[int] = None
+    hold_seconds: Optional[int] = None
+    rest_seconds: Optional[int] = None
+    times_per_day: Optional[int] = None
+    days_per_week: Optional[int] = None
+    duration_minutes: Optional[int] = Field(None, description="For timed exercises like walking")
+    limit_deg: Optional[int] = Field(None, description="Movement LIMIT the clinician set, in degrees, e.g. 'don't bend past 90' -> 90")
+    equipment: Optional[str] = Field(None, description="e.g. walker, chair with armrests, resistance band")
     form_cues: list[str] = Field(default_factory=list, description="Short coaching cues the clinician gave")
     explanation_patient_lang: str
+
+
+class TherapyPlan(BaseModel):
+    goals: list[str] = Field(default_factory=list, description="e.g. 'bend knee to 110 degrees in 6 weeks'")
+    precautions: list[str] = Field(default_factory=list, description="Things NOT to do / limits, in the doctor's language")
+    precautions_patient_lang: list[str] = Field(default_factory=list)
+    pain_stop_level: Optional[int] = Field(None, description="Stop exercising if pain goes above this (0-10), if stated")
+    after_exercise: Optional[str] = Field(None, description="e.g. 'ice 15 minutes'")
+    program_weeks: Optional[int] = None
+    clinic_sessions_per_week: Optional[int] = None
 
 
 class CareType(str, Enum):
@@ -102,6 +134,7 @@ class VisitNotes(BaseModel):
     medications: list[Medication] = Field(default_factory=list)
     exercises: list[Exercise] = Field(default_factory=list)
     care_items: list[CareItem] = Field(default_factory=list)
+    therapy: Optional[TherapyPlan] = Field(None, description="Only for physical therapy / rehab / exercise programs")
     questions: list[QuestionStatus] = Field(default_factory=list)
     wrapping_up: bool = Field(False, description="True if the doctor seems to be ending the visit")
 
@@ -208,6 +241,13 @@ Rules:
 - For each patient question below, decide its status:
   open = not covered yet; asked = patient raised it; answered = the doctor covered it (even unprompted).
 - wrapping_up = true if the doctor is clearly ending (e.g. "any other questions?", "see you in...").
+- Exercises (physical therapy): for each one, pick exercise_key from the list below ('other' if none fits).
+  Fill the number fields (sets_count, reps_count, hold_seconds, times_per_day, days_per_week, duration_minutes)
+  only when stated. limit_deg is a LIMIT ("don't bend past 90 degrees"), not a goal ("get to 110" -> therapy.goals).
+  Fill "therapy" only if the visit includes an exercise/rehab program: goals, precautions, pain limit, program length.
+
+Standard exercises (key: name):
+{exercise_keys}
 
 Patient's prepared questions (id: text):
 {questions}
@@ -222,6 +262,7 @@ async def extract_notes(utterances, questions, doc_lang, pat_lang) -> VisitNotes
     prompt = EXTRACT_PROMPT.format(
         doc_lang=lang_name(doc_lang), pat_lang=lang_name(pat_lang),
         questions=q, transcript=_transcript_text(utterances) or "(nothing yet)",
+        exercise_keys=exercise_library.prompt_list(),
     )
     return await _json_call(prompt, VisitNotes)
 
