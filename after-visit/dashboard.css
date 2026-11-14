@@ -83,6 +83,15 @@
 
 .nowrap { white-space: nowrap; }
 
+/* ---------- Visit Copilot links (shown only when the visit server answers) */
+.visit-btn { text-decoration: none; }
+.visit-btn[hidden], .visit-q-link[hidden] { display: none; }
+.visit-q-link { display: inline-flex; align-items: center; min-height: var(--target); font-size: var(--fs-sm); margin-top: var(--space-1); }
+@media (max-width: 767px) {
+  .visit-btn { width: var(--target); padding: 0; }
+  .visit-btn__label { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
 /* ---------- phones: 16 px gutter (MASTER), and room for seven ≥ 44 px day buttons */
 @media (max-width: 767px) {
   .dash { padding-left: var(--space-3); padding-right: var(--space-3); padding-top: var(--space-4); }

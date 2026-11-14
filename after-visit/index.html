@@ -42,6 +42,8 @@
         <p id="date" class="greet__date"></p>
       </div>
       <div class="greet-actions">
+        <!-- Shown only when the Visit Copilot server answers (dashboard.js addVisitButtons) -->
+        <a class="btn btn--secondary visit-btn" id="visit-copilot-link" href="#" hidden aria-label="Start a doctor's visit: live interpreter, notes and question reminders during your appointment"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span class="visit-btn__label">Start a doctor's visit</span></a>
         <button class="btn btn--icon" id="theme" type="button" aria-pressed="false" aria-label="Dark mode"><svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
       </div>
     </header>
@@ -99,6 +101,7 @@
           <h2 id="q-title" class="q-title">For your next visit</h2>
         </div>
         <ul class="qlist" id="questions"></ul>
+        <a class="visit-q-link" id="visit-copilot-questions" href="#" hidden>At your appointment? Open Visit Copilot. These questions will be ready.</a>
         <form id="question-form" class="addq" novalidate>
           <label for="question" class="visually-hidden">Add a question for your next visit</label>
           <input class="input" id="question" maxlength="500" placeholder="Add a question" autocomplete="off" aria-describedby="question-hint" />

@@ -1,7 +1,8 @@
 // Patient dashboard: greeting, this week, today's exercises, next visit, medicine, questions.
 // Layout and look follow design-system/ai-clinic-assistant/pages/patient-dashboard.md and design-preview.html.
-// Data: the therapist's plan (js/plan.js), completed sessions and questions saved on this device (js/dashboardData.js).
-import { DEMO_PLAN, planExercises } from './js/plan.js';
+// Data: the latest visit from the Visit Copilot server (plan, medicines, appointments, questions) when it answers;
+// otherwise the sample plan (js/plan.js). Completed sessions are saved on this device (js/dashboardData.js).
+import { planExercises } from './js/plan.js';
 import {
   readData, writeData, localDate, weekDates, completedIds, streak,
   SAMPLE_CARE, greeting, exerciseHeading, weekLabels, stoneLayout,
@@ -9,17 +10,102 @@ import {
 import { exerciseArt } from './js/exerciseArt.js';
 
 const $ = (s) => document.querySelector(s);
-const plan = planExercises();
 const today = new Date();
 const date = localDate(today);
-const therapist = DEMO_PLAN.therapist;
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const icon = (id, cls = 'icon') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
 const exIcon = (ex) => (ex.id === 'mini-squat' ? 'squat' : ex.joint.includes('knee') ? 'leg' : 'arm');
-const prescription = (ex) => `${ex.reps} reps${ex.mode === 'precise' ? `, aim for ${ex.target}°` : ''}${ex.holdMs ? `, hold ${ex.holdMs / 1000} s` : ''}`;
+
+// ---------------------------------------------------------------- During Visit connection
+// The dashboard reads the patient's latest visit from the Visit Copilot server: the therapist's exercise plan,
+// medicines, appointments and questions. If the server can't be reached, everything works as before with the
+// sample plan. Open as  index.html?patient_id=kim-001  (add &server=http://host:8000 if it runs elsewhere;
+// both are remembered on this device).
+const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+const params = new URLSearchParams(location.search);
+const PATIENT_ID = params.get('patient_id') || store.get('visitCopilot.patientId') || 'demo-patient';
+const SERVER = (params.get('server') ?? store.get('visitCopilot.server') ?? '').replace(/\/$/, '');
+if (params.get('patient_id')) store.set('visitCopilot.patientId', PATIENT_ID);
+if (params.get('server')) store.set('visitCopilot.server', SERVER);
+const API = `${SERVER}/api/patients/${encodeURIComponent(PATIENT_ID)}`;
+
+let plan = planExercises();          // sample plan until the visit server answers
+let V = null;                        // dashboard data from the visit server (null = offline / no server)
+let clinician = 'Dr. Lee';           // sample name; replaced by the real clinician from the visit
+const prog = () => V?.pt_plan?.program || {};
+
+/** planExercises() + the extra fields the visit plan carries (sets, hold, times a day, therapist's limit). */
+function fromVisitPlan(p) {
+  const extras = Object.fromEntries((p.exercises || []).map((x) => [x.id, x]));
+  return planExercises(p).map((e) => {
+    const x = extras[e.id] || {};
+    return { ...e, sets: x.sets ?? 1, perDay: x.perDay ?? null, holdMs: x.holdMs ?? e.holdMs, note: x.note || e.note,
+      checks: [...(e.checks || []), ...(x.checks || [])], prescribedAs: x.prescribedAs || '' };
+  });
+}
+/** "2 sets of 8 reps, 2× a day" (sets and times a day only when the visit plan gives them). */
+const dose = (e) => `${e.sets > 1 ? `${e.sets} sets of ` : ''}${e.reps} reps${e.perDay ? `, ${e.perDay}× a day` : ''}`;
+/** The short line under an exercise: dose, target (precise mode), side. */
+const prescription = (e) => `${dose(e)}${e.mode === 'precise' ? `, aim for ${e.target}°` : ''}${e.holdMs ? `, hold ${e.holdMs / 1000} s` : ''}${e.side && e.side !== 'auto' ? `, ${e.side} side` : ''}`;
 
 let data = readData();
 let opener = null;
+
+async function loadVisitData() {
+  try {
+    const res = await fetch(`${API}/dashboard`);
+    if (!res.ok) throw new Error(res.status);
+    V = await res.json();
+  } catch { V = null; return; }      // offline or no server: keep the sample dashboard
+  if (V.pt_plan?.exercises?.length) {
+    plan = fromVisitPlan(V.pt_plan);
+    store.set('visitCopilot.plan', JSON.stringify(V.pt_plan));   // so the session page can use the same plan
+  }
+  clinician = V.clinician || (V.has_visits ? 'your care team' : clinician);
+  // Questions written on this device before the server was reachable: send them too.
+  const local = data.questions || [];
+  for (const q of local) { if (!V.questions.some((s) => s.id === q.id)) { try { V.questions.push(await postQuestion(q.text, q.id)); } catch {} } }
+  if (local.length) { data.questions = []; persist(); }
+  render(); route(); addVisitButtons();
+  if (params.get('visit_id')) notice('Your visit is saved. Your plan, medicines and questions are up to date.');
+  else if (V.pt_plan) notice(`Your exercise plan from your visit on ${V.pt_plan.createdAt} is ready.`);
+}
+async function postQuestion(text, id) {
+  const res = await fetch(`${API}/questions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, id }) });
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+const questions = () => (V ? V.questions : data.questions);
+
+// "Asked" ticks are kept on this device for both local and server questions.
+const askedKey = `visitCopilot.asked.${PATIENT_ID}`;
+const asked = new Set((() => { try { return JSON.parse(store.get(askedKey) || '[]'); } catch { return []; } })());
+const saveAsked = () => store.set(askedKey, JSON.stringify([...asked]));
+
+// ---------------------------------------------------------------- open Visit Copilot
+// Visit Copilot runs on the same server as the API (SERVER, or this site if empty). The link carries the patient,
+// their languages, and a way back here; their saved questions are preloaded by Visit Copilot itself.
+const VISIT_URL = params.get('visit_url') || store.get('visitCopilot.visitUrl') || (SERVER ? `${SERVER}/` : '/');
+if (params.get('visit_url')) store.set('visitCopilot.visitUrl', VISIT_URL);
+function visitLink() {
+  const back = new URL(location.href); back.hash = ''; for (const k of ['visit_id', 'return_url']) back.searchParams.delete(k);
+  const q = new URLSearchParams({ patient_id: PATIENT_ID, return_url: back.toString() });
+  if (V?.patient_lang) q.set('patient_lang', V.patient_lang);
+  if (V?.doctor_lang) q.set('doctor_lang', V.doctor_lang);
+  if (V?.clinician && V.clinician !== 'your care team') q.set('provider', V.clinician);
+  return `${VISIT_URL}${VISIT_URL.includes('?') ? '&' : '?'}${q}`;
+}
+function addVisitButtons() {
+  // Only offer the links when Visit Copilot actually answered (or its address was given explicitly).
+  // Otherwise they would point back at this page (e.g. both apps started on the same port).
+  const known = !!V || !!params.get('visit_url') || !!store.get('visitCopilot.visitUrl');
+  for (const id of ['visit-copilot-link', 'visit-copilot-questions']) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.hidden = !known;
+    if (known) el.href = visitLink();
+  }
+}
 
 // ---------------------------------------------------------------- storage + notices
 function notice(text) {
@@ -34,6 +120,10 @@ function persist() {
 const remaining = () => plan.filter((e) => !completedIds(data, date).has(e.id));
 function session(ids) { if (ids.length) location.href = `session.html?exercises=${encodeURIComponent(ids.join(','))}`; }
 
+// Next visit + medicine: live from the visit when there is one, otherwise the sample care plan.
+const medsList = () => (V?.has_visits ? V.medications : [{ name: SAMPLE_CARE.medicine.name, frequency: SAMPLE_CARE.medicine.when }]);
+const apptsList = () => (V?.has_visits ? V.appointments : [{ due: SAMPLE_CARE.nextVisit.when, text: SAMPLE_CARE.nextVisit.who }]);
+
 // ---------------------------------------------------------------- render
 function render() {
   const done = completedIds(data, date);
@@ -41,7 +131,7 @@ function render() {
   const next = plan.find((e) => !done.has(e.id));
 
   // greeting
-  $('#hello').innerHTML = `${esc(greeting(today.getHours()))}, <span class="nowrap">${esc(SAMPLE_CARE.patient)}</span>`;
+  $('#hello').innerHTML = `${esc(greeting(today.getHours()))}, <span class="nowrap">${esc(V?.patient_name || SAMPLE_CARE.patient)}</span>`;
   $('#date').textContent = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   // week: streak pill, days on a path that fills up to today
@@ -82,31 +172,46 @@ function render() {
         : `<span class="ring" role="img" aria-label="${e === next ? 'Up next' : 'Not done yet'}"></span>`}</li>`;
   }).join('');
   const quoteFrom = next || plan[plan.length - 1];
-  $('#pt-note').textContent = quoteFrom ? `"${quoteFrom.note}" ${therapist}` : '';
+  $('#pt-note').textContent = quoteFrom ? `"${quoteFrom.note}" ${clinician}` : '';
   const allDone = count === plan.length;
   $('#start').textContent = allDone ? 'Today’s plan complete' : 'Start session';
   $('#start').disabled = allDone;
 
-  // next visit + medicine
-  $('#visit').innerHTML = `${esc(SAMPLE_CARE.nextVisit.when)}<small>${esc(SAMPLE_CARE.nextVisit.who)}</small>`;
-  $('#medicine').innerHTML = `${esc(SAMPLE_CARE.medicine.name)}<small>${esc(SAMPLE_CARE.medicine.when)}</small>`;
+  // next visit + medicine (the first of each; the day view lists them all)
+  const appts = apptsList(), meds = medsList();
+  $('#visit').innerHTML = appts.length
+    ? `${esc(appts[0].due || appts[0].text)}<small>${esc(appts[0].due ? appts[0].text : '')}${appts.length > 1 ? ` and ${appts.length - 1} more` : ''}</small>`
+    : 'Nothing scheduled<small>From your visits</small>';
+  $('#medicine').innerHTML = meds.length
+    ? `${esc(meds[0].name)}${meds[0].dose ? ` ${esc(meds[0].dose)}` : ''}<small>${esc(meds[0].frequency || meds[0].instructions || '')}${meds.length > 1 ? ` and ${meds.length - 1} more` : ''}</small>`
+    : 'None from your visits<small>Follow your care team’s advice</small>';
 
   // questions: tick a box once you've asked it
-  $('#questions').innerHTML = data.questions.length
-    ? data.questions.map((q) => `<li class="${q.asked ? 'asked' : ''}">
-        <input type="checkbox" data-asked="${esc(q.id)}" ${q.asked ? 'checked' : ''} aria-label="Asked: ${esc(q.text)}">
-        <div class="q-text"><span class="q-body">${esc(q.text)}</span><small>${esc(q.for || therapist)}</small></div>
+  const qs = questions();
+  $('#questions').innerHTML = qs.length
+    ? qs.map((q) => `<li class="${asked.has(q.id) ? 'asked' : ''}">
+        <input type="checkbox" data-asked="${esc(q.id)}" ${asked.has(q.id) ? 'checked' : ''} aria-label="Asked: ${esc(q.text)}">
+        <div class="q-text"><span class="q-body">${esc(q.text)}</span><small>${q.source === 'visit' ? 'Not asked at your last visit' : esc(q.for || clinician)}</small></div>
         <button class="btn btn--icon q-remove" type="button" data-remove="${esc(q.id)}" aria-label="Remove question: ${esc(q.text)}">${icon('x', 'icon icon--sm')}</button></li>`).join('')
     : '<li class="q-empty">Anything on your mind? Add it here so you remember to ask.</li>';
+  $('#question-hint').textContent = V ? `Press Enter to save. Shared with ${clinician} for your next visit.` : 'Press Enter to save. Saved on this device only.';
 }
 
 // ---------------------------------------------------------------- dialogs: plan, day, help
+function safetyHtml() {
+  const p = prog(), pain = p.pain_stop_level ?? 4;
+  const extra = [...(p.precautions || []), ...(V?.warning_signs || []).map((w) => `Call your care team: ${w.text}`)];
+  return `<p class="safety">${icon('alert', 'icon icon--sm')}<span>Stop and rest if pain goes above ${pain} out of 10, or if you feel dizzy.${extra.length ? `<br>${extra.map(esc).join('<br>')}` : ''}</span></p>`;
+}
+
 function planView() {
   const left = remaining();
   $('#detail').className = 'plan-view';
   $('#detail-title').textContent = "Today's plan";
-  $('#detail-sub').textContent = `${plan.length - left.length} of ${plan.length} done. About ${Math.max(5, plan.length * 5)} minutes. Have a chair or counter nearby for balance.`;
+  const equipment = V?.pt_plan ? [...new Set(V.pt_plan.exercises.map((x) => (x.instruction || '').match(/Use: ([^.]+)/)?.[1]).filter(Boolean))] : ['chair or counter for balance'];
+  $('#detail-sub').textContent = `${plan.length - left.length} of ${plan.length} done. About ${Math.max(5, plan.length * 5)} minutes.${equipment.length ? ` Equipment: ${equipment.join(', ')}.` : ''}`;
   const done = completedIds(data, date);
+  const goals = prog().goals?.length ? `<p><b>Your goal:</b> ${esc(prog().goals.join('; '))}</p>` : '';
   const doneRows = plan.filter((e) => done.has(e.id)).map((e) => `<div class="done-row"><span>${esc(e.name)}</span><span class="status status--good">${icon('check', 'icon icon--sm')}Done</span></div>`).join('');
   const todo = left.map((e) => {
     const previous = data.completions.filter((c) => c.id === e.id && c.date < date).sort((a, b) => b.date.localeCompare(a.date))[0];
@@ -114,20 +219,23 @@ function planView() {
       <h3 id="pl-${e.id}">${esc(e.name)}</h3>
       <div class="demo">${exerciseArt(e.id, { label: `${e.name}, shown moving: ${e.instruction}` })}<span class="demo__cap">${icon('play', 'icon icon--sm')}${esc(e.view)}</span></div>
       <dl class="facts">
-        <div><dt>Reps</dt><dd class="num">${e.reps}</dd></div>
+        <div><dt>Sets and reps</dt><dd class="num">${esc(dose(e))}</dd></div>
         <div><dt>${e.mode === 'precise' ? 'Aim for' : e.direction === 'decrease' ? 'Bend to' : 'Reach'}</dt><dd class="num">${e.target}°</dd></div>
         <div><dt>Hold</dt><dd class="num">${e.holdMs ? `${e.holdMs / 1000} seconds` : 'No hold'}</dd></div>
         <div><dt>The camera</dt><dd>${e.mode === 'precise' ? 'Measures your angle' : 'Counts your reps'}</dd></div>
       </dl>
+      ${e.side && e.side !== 'auto' ? `<p>Use your ${esc(e.side)} side.</p>` : ''}
       <div><h4>How to do it</h4><ol><li>${esc(e.setup)}</li><li>${esc(e.instruction)}</li><li>Move slowly, then come back to the start.</li></ol></div>
       <div><h4>A good rep</h4><ul class="checks"><li>${icon('check', 'icon icon--sm')}Reach the target</li><li>${icon('check', 'icon icon--sm')}Slow and steady</li>${e.checks.map((c) => `<li>${icon('check', 'icon icon--sm')}${esc(c.label)}</li>`).join('')}</ul></div>
-      <blockquote class="quote">"${esc(e.note)}"<small>${esc(therapist)}</small></blockquote>
+      <blockquote class="quote">"${esc(e.note)}"<small>${esc(clinician)}</small></blockquote>
       <p class="fine">${previous ? `Last time: ${esc(new Date(`${previous.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long' }))}${Number.isFinite(previous.peak) ? `, best ${previous.peak}°` : ''}.` : 'Your first time. A fresh starting point.'}</p>
       <div class="row"><button class="btn btn--secondary" type="button" data-exercise="${e.id}">Start this one</button><button class="btn btn--ghost" type="button" data-ask="${esc(e.name)}">Ask about this</button></div>
     </article>`;
   }).join('');
-  $('#detail-body').innerHTML = `<p class="safety">${icon('alert', 'icon icon--sm')}Stop and rest if pain goes above 4 out of 10, or if you feel dizzy.</p>
-    ${doneRows ? `<div>${doneRows}</div>` : ''}${todo || '<p>All done for today. Nice work!</p>'}
+  const untracked = V?.pt_plan?.untracked || [];
+  const also = untracked.length ? `<section class="day-sec"><h3>Also do (no camera needed)</h3><ul class="day-list">${untracked.map((u) => `<li><div class="grow">${esc(u.name)}<small>${esc([u.as_prescribed, u.duration_minutes ? `${u.duration_minutes} minutes` : ''].filter(Boolean).join(', '))}</small></div></li>`).join('')}</ul></section>` : '';
+  $('#detail-body').innerHTML = `${safetyHtml()}${goals}
+    ${doneRows ? `<div>${doneRows}</div>` : ''}${todo || '<p>All done for today. Nice work!</p>'}${also}
     <div class="plan-foot"><button class="btn btn--accent btn--lg" type="button" data-session ${left.length ? '' : 'disabled'}>${left.length ? 'Start session' : 'Today’s plan complete'}</button></div>`;
 }
 
@@ -138,10 +246,12 @@ function dayView(key) {
   $('#detail-title').textContent = parsed.toLocaleDateString(undefined, { weekday: 'long' });
   $('#detail-sub').textContent = parsed.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
   const done = completedIds(data, key);
+  const meds = medsList(), appts = apptsList();
   $('#detail-body').innerHTML = `
     <section class="day-sec"><h3>Exercises</h3><ul class="day-list">${plan.map((e) => `<li><span class="badge-icon badge-icon--peach">${icon(exIcon(e))}</span><div class="grow">${esc(e.name)}<small>${done.has(e.id) ? 'Done' : esc(prescription(e))}</small></div>${done.has(e.id) ? `<span class="tick" role="img" aria-label="Done">${icon('check', 'icon icon--sm')}</span>` : ''}</li>`).join('')}</ul></section>
-    <section class="day-sec"><h3>Medicine</h3><p>${esc(SAMPLE_CARE.medicine.name)}, ${esc(SAMPLE_CARE.medicine.when.toLowerCase())}</p></section>
-    <section class="day-sec"><h3>Next visit</h3><p>${esc(SAMPLE_CARE.nextVisit.when)} with ${esc(SAMPLE_CARE.nextVisit.who)}</p></section>
+    <section class="day-sec"><h3>Medicine</h3>${meds.length ? `<ul class="day-list">${meds.map((m) => `<li><div class="grow">${esc(m.name)}${m.dose ? ` ${esc(m.dose)}` : ''}<small>${esc([m.frequency, m.instructions].filter(Boolean).join(', '))}${m.provider ? ` · from ${esc(m.provider)}${m.date ? `, ${esc(m.date)}` : ''}` : ''}</small></div></li>`).join('')}</ul>` : '<p class="muted">No medicines from your visits.</p>'}
+      ${V?.stopped_medications?.length ? `<p class="fine">Stopped: ${V.stopped_medications.map((m) => esc(m.name)).join(', ')}</p>` : ''}</section>
+    <section class="day-sec"><h3>Appointments</h3>${appts.length ? `<ul class="day-list">${appts.map((a) => `<li><div class="grow">${esc(a.due || a.text)}<small>${esc(a.due ? a.text : '')}</small></div></li>`).join('')}</ul>` : '<p class="muted">No appointments from your visits.</p>'}</section>
     ${key === date && remaining().length ? '<button class="btn btn--accent btn--lg" type="button" data-session>Start session</button>' : key === date ? '' : '<p class="fine">Exercise sessions start from today’s plan.</p>'}`;
   return true;
 }
@@ -151,8 +261,10 @@ function helpView() {
   $('#detail-title').textContent = 'A little help';
   $('#detail-sub').textContent = '';
   $('#detail-body').innerHTML = `<p>Tap a day to see its plan. Open today's exercises full screen for the steps, or press Start session to set up your camera.</p>
-    <p>Your progress and questions stay in this browser. Nothing is sent to your clinic.</p>
-    <p class="fine">This is a sample plan. For care questions, contact your care team. If you need urgent help, call your local emergency number.</p>`;
+    ${V ? `<p>Your plan, medicines and appointments come from your visit with ${esc(clinician)}. Questions you add here are shared with your care team, so they're ready at your next visit. Completed exercises stay in this browser.</p>`
+      : '<p>Your progress and questions stay in this browser. Nothing is sent to your clinic. This is a sample plan.</p>'}
+    <p class="fine">For care questions, contact your care team. If you need urgent help, call your local emergency number.</p>
+    <section class="day-sec"><h3>Demo tools</h3><button class="btn btn--secondary" type="button" data-reset>Reset demo data</button></section>`;
 }
 
 function route() {
@@ -171,8 +283,8 @@ $('#close').onclick = () => { location.hash = ''; };
 $('#expand').onclick = () => { location.hash = 'plan'; };
 $('#start').onclick = () => session(remaining().map((e) => e.id));
 
-// ---------------------------------------------------------------- clicks (days, plan buttons, questions)
-document.addEventListener('click', (e) => {
+// ---------------------------------------------------------------- clicks (days, plan buttons, questions, reset)
+document.addEventListener('click', async (e) => {
   const b = e.target.closest('button');
   if (!b) return;
   if (b.dataset.day) location.hash = `day=${b.dataset.day}`;
@@ -180,35 +292,61 @@ document.addEventListener('click', (e) => {
   if (b.dataset.exercise) session([b.dataset.exercise]);
   if (b.hasAttribute('data-session')) session(remaining().map((x) => x.id));
   if (b.dataset.ask) { location.hash = ''; $('#question').value = `About ${b.dataset.ask}: `; setTimeout(() => $('#question').focus(), 0); }
+  if (b.hasAttribute('data-reset')) {
+    if (!confirm(`Erase all demo data for ${PATIENT_ID}?\n\nThis clears completed exercises and questions on this device${V ? ', and the visits, plan, questions and home sessions saved on the visit server.' : '.'}`)) return;
+    let serverOk = true;
+    if (V) { try { const r = await fetch(`${API}?confirm=yes`, { method: 'DELETE' }); serverOk = r.ok; } catch { serverOk = false; } }
+    data = { ...data, questions: [], completions: [] }; persist();
+    asked.clear(); saveAsked();
+    try { localStorage.removeItem('visitCopilot.plan'); } catch {}
+    location.hash = '';
+    if (!serverOk) { notice('This device was reset, but the visit server did not allow it (check ALLOW_RESET).'); setTimeout(() => location.reload(), 2500); }
+    else location.reload();
+    return;
+  }
   if (b.dataset.remove) {
-    data.questions = data.questions.filter((q) => q.id !== b.dataset.remove);
-    persist(); render(); $('#question').focus();
+    const id = b.dataset.remove;
+    if (V) {
+      try { await fetch(`${API}/questions/${encodeURIComponent(id)}`, { method: 'DELETE' }); V.questions = V.questions.filter((q) => q.id !== id); }
+      catch { notice('Could not reach your clinic. Try again later.'); }
+    } else { data.questions = data.questions.filter((q) => q.id !== id); persist(); }
+    asked.delete(id); saveAsked();
+    render(); $('#question').focus();
   }
 });
 document.addEventListener('change', (e) => {
   const id = e.target.dataset?.asked;
   if (!id) return;
-  data.questions = data.questions.map((q) => (q.id === id ? { ...q, asked: e.target.checked } : q));
-  persist(); render();
+  if (e.target.checked) asked.add(id); else asked.delete(id);
+  saveAsked(); render();
   document.querySelector(`[data-asked="${CSS.escape(id)}"]`)?.focus();
 });
 
 // ---------------------------------------------------------------- add a question (Enter to save, or the mic)
 function questionError(msg) {
   $('#question').setAttribute('aria-invalid', msg ? 'true' : 'false');
-  $('#question-hint').textContent = msg || 'Press Enter to save. Saved on this device only.';
+  if (msg) $('#question-hint').textContent = msg; else render();
   $('#question-hint').classList.toggle('err', !!msg);
 }
-$('#question-form').onsubmit = (e) => {
+$('#question-form').onsubmit = async (e) => {
   e.preventDefault();
   const text = $('#question').value.trim();
   if (!text) { questionError('Type a question first, then press Enter.'); $('#question').focus(); return; }
-  data.questions.push({ id: crypto.randomUUID(), text, for: therapist, asked: false });
+  const id = crypto.randomUUID();
+  if (V) {
+    try {
+      V.questions.push(await postQuestion(text, id));
+      $('#question').value = ''; questionError('');
+      notice(`Question saved for ${clinician}. It will be ready at your next visit.`);
+      return;
+    } catch { /* fall back to this device */ }
+  }
+  data.questions.push({ id, text, for: clinician });
   const saved = persist();
-  render(); $('#question').value = ''; questionError('');
+  $('#question').value = ''; questionError('');
   if (saved) notice('Question saved on this device.');
 };
-$('#question').oninput = () => questionError('');
+$('#question').oninput = () => { if ($('#question').getAttribute('aria-invalid') === 'true') questionError(''); };
 const Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!Recog) {
   $('#mic').disabled = true;
@@ -217,7 +355,7 @@ if (!Recog) {
   $('#mic').onclick = () => {
     const r = new Recog();
     r.lang = navigator.language;
-    r.onresult = (e) => { $('#question').value = `${$('#question').value} ${e.results[0][0].transcript}`.slice(0, 500).trim(); questionError(''); };
+    r.onresult = (e) => { $('#question').value = `${$('#question').value} ${e.results[0][0].transcript}`.slice(0, 500).trim(); };
     r.onerror = () => notice('Voice input could not start. You can type your question.');
     r.onend = () => { $('#mic').disabled = false; };
     try { r.start(); $('#mic').disabled = true; notice('Listening…'); }
@@ -241,3 +379,5 @@ addEventListener('hashchange', route);
 addEventListener('pageshow', () => { data = readData(); render(); });
 render();
 route();
+addVisitButtons();
+loadVisitData();

@@ -66,11 +66,23 @@ const link = {
 };
 
 function applyLinkParams() {
+  if (link.returnUrl) {           // opened from another app (e.g. the dashboard): offer a way back
+    const back = document.createElement("a");
+    back.className = "backtop"; back.href = link.returnUrl; back.textContent = "← Back";
+    back.setAttribute("aria-label", "Back to the previous app");
+    $("#screen-setup").prepend(back);
+  }
   if (params.get("doctor_lang")) $("#doctor-lang").value = params.get("doctor_lang");
   if (params.get("patient_lang")) $("#patient-lang").value = params.get("patient_lang");
   if (params.get("provider")) $("#provider").value = params.get("provider");
   const qs = [...params.getAll("q"), ...(params.get("questions") || "").split("\n")].map((s) => s.trim()).filter(Boolean);
   if (qs.length) $("#questions").value = qs.join("\n");
+  else if (params.has("patient_id")) {
+    // questions the patient saved at home (dashboard) or didn't get to ask last time
+    api(`/api/patients/${encodeURIComponent(link.patientId)}/questions`)
+      .then(({ questions }) => { if (questions.length && !$("#questions").value.trim()) $("#questions").value = questions.map((q) => q.text).join("\n"); })
+      .catch(() => {});
+  }
   if (params.has("patient_id")) $(".sub").textContent += ` · ${link.patientId}`;
 }
 
@@ -84,13 +96,15 @@ function initSetup() {
     $("#start-btn").disabled = $("#demo-btn").disabled = !e.target.checked;
   });
   const loadDemoQuestions = async () => {
-    const { questions } = await api(`/api/demo-questions?lang=${$("#patient-lang").value}&scenario=${$("#demo-scenario").value}`);
+    const scenario = $("#demo-scenario")?.value || "";
+    const { questions } = await api(`/api/demo-questions?lang=${$("#patient-lang").value}&scenario=${scenario}`);
     $("#questions").value = questions.join("\n");
   };
   $("#load-demo-q").addEventListener("click", loadDemoQuestions);
   // Picking a demo sets the matching languages and sample questions.
+  if (!$("#demo-scenario")) console.warn("index.html is out of date: no demo picker (replace frontend/index.html)");
   api("/api/demo-scenarios").then((sc) => {
-    $("#demo-scenario").addEventListener("change", async () => {
+    $("#demo-scenario")?.addEventListener("change", async () => {
       const s = sc[$("#demo-scenario").value];
       if (s) { $("#doctor-lang").value = s.doctor_lang; $("#patient-lang").value = s.patient_lang; }
       await loadDemoQuestions();
@@ -167,7 +181,7 @@ function connect(mode) {
       ws.send(JSON.stringify({ type: "start_audio" }));
       if (!state.worklet) await startMic();
     } else if (mode === "demo") {
-      ws.send(JSON.stringify({ type: "demo", scenario: $("#demo-scenario").value }));
+      ws.send(JSON.stringify({ type: "demo", scenario: $("#demo-scenario")?.value || null }));
       $("#live-dot").classList.add("on");
     }
   };
