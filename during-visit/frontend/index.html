@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#f6f3ee" />
   <link rel="manifest" href="manifest.json" />
-  <title>Patient Copilot</title>
+  <title>Visit Copilot</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -17,7 +17,7 @@
     <header class="brand">
       <div class="logo" aria-hidden="true">◐</div>
       <div>
-        <h1 id="setup-title">Patient Copilot</h1>
+        <h1 id="setup-title">Visit Copilot</h1>
         <p class="sub">Live interpreter and notes for your doctor's visit</p>
       </div>
     </header>
@@ -45,7 +45,15 @@
       </label>
 
       <button type="submit" id="start-btn" class="primary big" disabled>🎙️ Start visit</button>
-      <button type="button" id="demo-btn" class="secondary" disabled>▶︎ Run demo visit (no mic)</button>
+      <div class="demo-row">
+        <label for="demo-scenario" class="sr-only">Demo visit</label>
+        <select id="demo-scenario" aria-label="Demo visit">
+          <option value="knee">Demo: Knee injury (Korean interpreter)</option>
+          <option value="pt">Demo: Physical therapy → workout plan</option>
+          <option value="heart">Demo: Heart follow-up (English captions)</option>
+        </select>
+        <button type="button" id="demo-btn" class="secondary" disabled>▶︎ Run demo (no mic)</button>
+      </div>
       <p class="fine">This tool helps you understand your visit. It does not replace a certified medical interpreter for consent forms or emergencies.</p>
     </form>
   </section>
