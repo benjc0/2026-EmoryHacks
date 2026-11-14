@@ -37,7 +37,13 @@ export function poseCommand(env = process.env, platform = process.platform) {
  * Start the pose helper. Resolves once MediaPipe has loaded.
  * @returns {Promise<{ track(frame:{rgba,width,height,t}): Promise<{landmarks, w, h, t}|null>, close(): void }>}
  */
-export function startPose({ command = poseCommand(), log = console.log } = {}) {
+/**
+ * @param {object} [opts]
+ * @param {(code: number|null) => void} [opts.onExit] Called if the helper dies on its own after it was
+ *   ready (crash, killed, etc.) -- not called after a normal close(). Lets the caller restart pose tracking
+ *   and/or tell the patient tracking was lost, instead of track() silently resolving null forever.
+ */
+export function startPose({ command = poseCommand(), log = console.log, onExit } = {}) {
   if (command.check && !existsSync(command.check)) return Promise.reject(new Error(`Pose helper not set up: ${command.check} is missing (see pose/README.md)`));
   const child = spawn(command.cmd, command.args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
   const lines = createInterface({ input: child.stdout });
@@ -50,15 +56,18 @@ export function startPose({ command = poseCommand(), log = console.log } = {}) {
   let pending = null;            // { resolve, w, h, t } for the frame in flight
   let box = null, boxAt = -Infinity;
   let closed = false;
+  let intentionalClose = false;  // true once close() was called, so onExit isn't treated as a crash
 
   let ready = false;
   return new Promise((resolve, reject) => {
     child.on('error', (error) => { closed = true; if (!ready) reject(error); });
     child.on('exit', (code) => {
+      const wasReady = ready, wasIntentional = intentionalClose;
       closed = true;
       pending?.resolve(null); pending = null;
-      if (!ready) reject(new Error(`Pose helper exited (${code}) before it was ready`));
-      else if (code) log(`[pose] helper stopped (exit ${code})`);
+      if (!wasReady) { reject(new Error(`Pose helper exited (${code}) before it was ready`)); return; }
+      if (code) log(`[pose] helper stopped (exit ${code})`);
+      if (!wasIntentional) onExit?.(code);
     });
 
     lines.on('line', (line) => {
@@ -88,6 +97,7 @@ export function startPose({ command = poseCommand(), log = console.log } = {}) {
 
   function close() {
     if (closed) return;
+    intentionalClose = true;
     closed = true;
     pending?.resolve(null); pending = null;
     child.stdin.end();

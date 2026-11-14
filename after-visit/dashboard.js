@@ -2,17 +2,17 @@
 // Layout and look follow design-system/ai-clinic-assistant/pages/patient-dashboard.md and design-preview.html.
 // Data: the latest visit from the Visit Copilot server (plan, medicines, appointments, questions) when it answers;
 // otherwise the sample plan (js/plan.js). Completed sessions are saved on this device (js/dashboardData.js).
-import { planExercises } from './js/plan.js';
+import { planExercises, planExercisesFromVisit } from './js/plan.js';
 import {
   readData, writeData, localDate, weekDates, completedIds, streak,
   SAMPLE_CARE, greeting, exerciseHeading, weekLabels, stoneLayout,
 } from './js/dashboardData.js';
 import { exerciseArt } from './js/exerciseArt.js';
+import { esc } from './js/escapeHtml.js';
 
 const $ = (s) => document.querySelector(s);
 const today = new Date();
 const date = localDate(today);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const icon = (id, cls = 'icon') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
 const exIcon = (ex) => (ex.id === 'mini-squat' ? 'squat' : ex.joint.includes('knee') ? 'leg' : 'arm');
 
@@ -34,16 +34,6 @@ let V = null;                        // dashboard data from the visit server (nu
 let clinician = 'Dr. Lee';           // sample name; replaced by the real clinician from the visit
 const prog = () => V?.pt_plan?.program || {};
 
-/** planExercises() + the extra fields the visit plan carries (sets, hold, times a day, therapist's limit). */
-function fromVisitPlan(p) {
-  const extras = Object.fromEntries((p.exercises || []).map((x) => [x.id, x]));
-  return planExercises(p).map((e) => {
-    const x = extras[e.id] || {};
-    return { ...e, sets: x.sets ?? 1, perDay: x.perDay ?? null, holdMs: x.holdMs ?? e.holdMs, note: x.note || e.note,
-      checks: [...(e.checks || []), ...(x.checks || [])], prescribedAs: x.prescribedAs || '' };
-  });
-}
-/** "2 sets of 8 reps, 2× a day" (sets and times a day only when the visit plan gives them). */
 const dose = (e) => `${e.sets > 1 ? `${e.sets} sets of ` : ''}${e.reps} reps${e.perDay ? `, ${e.perDay}× a day` : ''}`;
 /** The short line under an exercise: dose, target (precise mode), side. */
 const prescription = (e) => `${dose(e)}${e.mode === 'precise' ? `, aim for ${e.target}°` : ''}${e.holdMs ? `, hold ${e.holdMs / 1000} s` : ''}${e.side && e.side !== 'auto' ? `, ${e.side} side` : ''}`;
@@ -58,7 +48,7 @@ async function loadVisitData() {
     V = await res.json();
   } catch { V = null; return; }      // offline or no server: keep the sample dashboard
   if (V.pt_plan?.exercises?.length) {
-    plan = fromVisitPlan(V.pt_plan);
+    plan = planExercisesFromVisit(V.pt_plan);
     store.set('visitCopilot.plan', JSON.stringify(V.pt_plan));   // so the session page can use the same plan
   }
   clinician = V.clinician || (V.has_visits ? 'your care team' : clinician);

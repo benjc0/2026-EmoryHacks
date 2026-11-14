@@ -11,8 +11,8 @@ test('every exercise in the library has its own animated drawing', () => {
   }
 });
 
-test('labelled when used alone, hidden from screen readers when next to the name', () => {
-  assert.match(exerciseArt('mini-squat', { label: 'Mini squat <shown>' }), /role="img" aria-label="Mini squat shown"/);
+test('labelled when used alone, hidden from screen readers when next to the name; special characters are HTML-escaped, not stripped', () => {
+  assert.match(exerciseArt('mini-squat', { label: 'Mini squat <shown>' }), /role="img" aria-label="Mini squat &lt;shown&gt;"/);
   assert.match(exerciseArt('shoulder-abduction'), /aria-hidden="true"/);
 });
 

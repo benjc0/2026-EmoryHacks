@@ -26,7 +26,7 @@ import extract
 import integration
 import search_index
 import storage
-from demo_script import pick_demo
+from demo_script import pick_demo, SCENARIOS
 from live import LiveInterpreter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -234,7 +234,6 @@ async def demo_questions(lang: str = "ko", scenario: str | None = None):
 
 @app.get("/api/demo-scenarios")
 async def demo_scenarios():
-    from demo_script import SCENARIOS
     return {k: {"doctor_lang": d, "patient_lang": p} for k, (_, _, d, p) in SCENARIOS.items()}
 
 
@@ -250,9 +249,17 @@ async def visit_detail(vid: str):
 @app.post("/api/visits/{vid}/scan")
 async def scan(vid: str, file: UploadFile = File(...)):
     v = get_visit(vid)
-    data = await file.read()
-    if len(data) > 15 * 1024 * 1024:
-        raise HTTPException(413, "image too large")
+    limit = 15 * 1024 * 1024
+    chunks, total = [], 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > limit:          # stop reading as soon as we're over, instead of buffering it all first
+            raise HTTPException(413, "image too large")
+        chunks.append(chunk)
+    data = b"".join(chunks)
     res = await extract.scan_document(data, file.content_type or "image/jpeg",
                                       v.doctor_lang, v.patient_lang)
     out = res.model_dump(mode="json")
@@ -371,7 +378,13 @@ async def visit_socket(ws: WebSocket, vid: str):
                 if v.interp:
                     v.interp.push_audio(msg["bytes"])
                 continue
-            data = json.loads(msg.get("text") or "{}")
+            try:
+                data = json.loads(msg.get("text") or "{}")
+                if not isinstance(data, dict):
+                    raise ValueError("text message must be a JSON object")
+            except (json.JSONDecodeError, ValueError) as e:
+                log.warning("visit %s: dropping malformed ws message: %s", vid, e)
+                continue
             kind = data.get("type")
             if kind == "start_audio":
                 await v.start_live()

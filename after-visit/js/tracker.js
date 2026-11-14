@@ -1,6 +1,10 @@
 // Camera, pose model and video recording.
-// MediaPipe is imported lazily inside loadPose(), so if the CDN is unreachable the camera and
-// recording still work and the session falls back to simple mode (tap per rep).
+// MediaPipe is imported lazily inside loadPose(), so the camera opens and recording still works even
+// if the CDN is unreachable or the model fails to load. There is currently no manual/tap-to-count
+// fallback for rep counting in that case: session.js shows a "Motion tracking could not load" coach
+// message once, for the whole session (loadPose() is only awaited once, in the Start click handler),
+// and every exercise in that session records without rep detection/scoring until the patient ends the
+// session and starts a new one.
 const BUNDLE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';

@@ -47,8 +47,9 @@ MAIN_APP_WEBHOOK_URL = os.getenv("MAIN_APP_WEBHOOK_URL", "")
 # visit summary's "Start home exercises" button opens (patient_id is added). Leave both empty to hide the button.
 PT_APP_DIR = os.getenv("PT_APP_DIR", "")
 PT_APP_URL = os.getenv("PT_APP_URL", "/pt/" if PT_APP_DIR else "")
-# Allow DELETE /api/patients/{id} (the dashboard's "Reset demo data"). Turn off for anything real.
-ALLOW_RESET = os.getenv("ALLOW_RESET", "true").lower() in ("1", "true", "yes")
+# Allow DELETE /api/patients/{id} (the dashboard's "Reset demo data"). Defaults off;
+# set ALLOW_RESET=true in .env for local/demo use. Turn off for anything real.
+ALLOW_RESET = os.getenv("ALLOW_RESET", "false").lower() in ("1", "true", "yes")
 # Web origins allowed to call this API from a browser (comma-separated). "*" = anyone (fine for a hackathon).
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
 

@@ -6,6 +6,8 @@
 // exerciseArt(id)              -> decorative SVG (aria-hidden), for use next to the exercise name
 // exerciseArt(id, { label })   -> SVG with role="img" and that label, for use on its own
 
+import { esc } from './escapeHtml.js';
+
 const LIMB = 'stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"';
 const GHOST = 'class="art__ghost" stroke-width="4" stroke-dasharray="3 7" stroke-linecap="round" fill="none"';
 const PROP = 'class="art__prop" stroke-width="4" stroke-linecap="round" fill="none"';
@@ -49,6 +51,6 @@ export const ART_IDS = Object.keys(ART);
 /** SVG markup for an exercise drawing. Unknown ids get a plain standing figure. */
 export function exerciseArt(id, { label = '' } = {}) {
   const a = ART[id] ?? { still: head(60, 20) + line('60,30 60,70') + line('60,70 50,106') + line('60,70 70,106') + line('44,38 76,38') + line('44,38 40,66') + line('76,38 80,66'), ghost: '', move: '' };
-  const a11y = label ? `role="img" aria-label="${String(label).replace(/[&<>"]/g, '')}"` : 'aria-hidden="true" focusable="false"';
+  const a11y = label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true" focusable="false"';
   return `<svg class="art__svg" viewBox="0 0 120 120" ${a11y}>${a.ghost}${a.still}${a.move}</svg>`;
 }

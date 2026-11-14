@@ -16,6 +16,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 import config
+import exercise_library
 from config import lang_name
 
 _client: genai.Client | None = None
@@ -55,11 +56,31 @@ class Medication(BaseModel):
     explanation_patient_lang: str = Field(description="One or two plain sentences in the patient's language")
 
 
+class Side(str, Enum):
+    left = "left"
+    right = "right"
+    both = "both"
+
+
 class Exercise(BaseModel):
     name: str
+    exercise_key: Optional[str] = Field(
+        None, description="Closest match from the standard exercise list below, or null if none fit")
     body_part: Optional[str] = None
+    side: Optional[Side] = None
     sets: Optional[str] = None
     reps: Optional[str] = None
+    sets_count: Optional[int] = Field(None, description="Sets as a plain number, e.g. 3 (null if not stated)")
+    reps_count: Optional[int] = Field(None, description="Reps as a plain number, e.g. 10 (null if not stated)")
+    hold_seconds: Optional[int] = Field(None, description="How long to hold each rep, in seconds, if stated")
+    rest_seconds: Optional[int] = Field(None, description="Rest between sets, in seconds, if stated")
+    times_per_day: Optional[int] = None
+    days_per_week: Optional[int] = None
+    duration_minutes: Optional[int] = Field(None, description="For timed exercises like walking, if stated")
+    equipment: Optional[str] = Field(None, description="e.g. 'resistance band', 'yoga mat', if mentioned")
+    limit_deg: Optional[int] = Field(
+        None, description="Clinical movement limit in degrees, if the doctor gave one "
+                           "(e.g. 'don't bend past 90', 'don't raise past 120')")
     frequency: Optional[str] = None
     form_cues: list[str] = Field(default_factory=list, description="Short coaching cues the clinician gave")
     explanation_patient_lang: str
@@ -97,10 +118,22 @@ class QuestionStatus(BaseModel):
     evidence: Optional[str] = Field(None, description="Very short quote/paraphrase showing it was covered")
 
 
+class Therapy(BaseModel):
+    goals: list[str] = Field(default_factory=list, description="What the exercise program is meant to achieve")
+    precautions: list[str] = Field(default_factory=list, description="In the doctor's language")
+    precautions_patient_lang: list[str] = Field(default_factory=list)
+    pain_stop_level: Optional[int] = Field(None, description="Stop exercising if pain goes above this, 0-10")
+    after_exercise: Optional[str] = Field(None, description="What to do after exercising, e.g. 'ice 15 minutes'")
+    program_weeks: Optional[int] = Field(None, description="How many weeks the program runs, if stated")
+    clinic_sessions_per_week: Optional[int] = Field(None, description="In-clinic PT visits per week, if stated")
+
+
 class VisitNotes(BaseModel):
     diagnoses: list[Diagnosis] = Field(default_factory=list)
     medications: list[Medication] = Field(default_factory=list)
     exercises: list[Exercise] = Field(default_factory=list)
+    therapy: Optional[Therapy] = Field(
+        None, description="Program-level exercise info; only set if exercises were prescribed")
     care_items: list[CareItem] = Field(default_factory=list)
     questions: list[QuestionStatus] = Field(default_factory=list)
     wrapping_up: bool = Field(False, description="True if the doctor seems to be ending the visit")
@@ -208,6 +241,14 @@ Rules:
 - For each patient question below, decide its status:
   open = not covered yet; asked = patient raised it; answered = the doctor covered it (even unprompted).
 - wrapping_up = true if the doctor is clearly ending (e.g. "any other questions?", "see you in...").
+- For each exercise, also set exercise_key to the closest match from this standard list (or null if none fit
+  well -- never force a bad match):
+{exercise_keys}
+  Fill sets_count/reps_count/hold_seconds/rest_seconds/times_per_day/days_per_week/duration_minutes/equipment/
+  limit_deg/side whenever the doctor actually stated them; leave each null rather than guessing.
+- If exercises were prescribed, also fill "therapy" with any program-level goals, precautions, pain_stop_level,
+  after_exercise care, program_weeks and clinic_sessions_per_week the doctor mentioned. Leave fields null/empty
+  if not stated, and leave the whole "therapy" object null if no exercises were prescribed.
 
 Patient's prepared questions (id: text):
 {questions}
@@ -222,6 +263,7 @@ async def extract_notes(utterances, questions, doc_lang, pat_lang) -> VisitNotes
     prompt = EXTRACT_PROMPT.format(
         doc_lang=lang_name(doc_lang), pat_lang=lang_name(pat_lang),
         questions=q, transcript=_transcript_text(utterances) or "(nothing yet)",
+        exercise_keys=exercise_library.prompt_list(),
     )
     return await _json_call(prompt, VisitNotes)
 

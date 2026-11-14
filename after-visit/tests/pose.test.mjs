@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { contentBox, cropToRgb, frameHeader, toLandmarks } from '../coach-agent/pose-frames.mjs';
-import { poseCommand, toWslPath } from '../coach-agent/pose.mjs';
+import { poseCommand, startPose, toWslPath } from '../coach-agent/pose.mjs';
 
 /** A 1280x720 RGBA frame: black bars, with a grey picture from x0 to x1 (like a portrait phone over FaceTime). */
 function letterboxed(x0 = 400, x1 = 884, W = 1280, H = 720) {
@@ -62,8 +63,39 @@ test('poseCommand runs in WSL on Windows by default, natively elsewhere', () => 
   assert.equal(win.cmd, 'wsl.exe');
   assert.deepEqual(win.args.slice(0, 2), ['-d', 'Ubuntu-24.04']);
   assert.equal(win.args[2], '--exec');
-  assert.match(win.args.at(-1), /^exec ~\/\.venvs\/emory-pose\/bin\/python '\/mnt\/.+\/pose_server\.py' '\/mnt\/.+\.task'$/);
+  // Build the expected WSL script/model command the same way poseCommand does (toWslPath + bash quoting),
+  // instead of asserting a literal '/mnt/...' path: that only appears when the checkout itself lives under
+  // a Windows-style path, so a hardcoded regex would pass or fail depending on the machine running the test.
+  const q = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
+  const script = toWslPath(fileURLToPath(new URL('../coach-agent/pose/pose_server.py', import.meta.url)));
+  const model = toWslPath(fileURLToPath(new URL('../coach-agent/pose/models/pose_landmarker_lite.task', import.meta.url)));
+  assert.equal(win.args.at(-1), `exec ~/.venvs/emory-pose/bin/python ${q(script)} ${q(model)}`);
   assert.equal(poseCommand({ POSE_WSL_DISTRO: 'Ubuntu' }, 'win32').args[1], 'Ubuntu');
   assert.equal(poseCommand({ POSE_RUNTIME: 'native' }, 'win32').runtime, 'native');
   assert.equal(poseCommand({}, 'linux').runtime, 'native');
+});
+
+test('startPose calls onExit when the helper dies on its own, but not after an intentional close()', async () => {
+  // Fake pose_server.py protocol in plain node (no python/MediaPipe needed): print the ready line,
+  // then either crash or sit idle until killed.
+  const ready = "console.log(JSON.stringify({ready:true}));";
+
+  let seenCode = null;
+  await startPose({
+    command: { cmd: process.execPath, args: ['-e', ready + "setTimeout(() => process.exit(3), 50);"] },
+    log: () => {},
+    onExit: (code) => { seenCode = code; },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(seenCode, 3);
+
+  let exitSeenAfterClose = false;
+  const pose = await startPose({
+    command: { cmd: process.execPath, args: ['-e', ready + "process.stdin.resume();"] },
+    log: () => {},
+    onExit: () => { exitSeenAfterClose = true; },
+  });
+  pose.close();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(exitSeenAfterClose, false);
 });

@@ -3,7 +3,7 @@
 //
 // Flow per exercise: setup (are you in frame?) -> 1.5 s in frame -> 3-2-1 -> recording starts on its own
 // -> reps are counted and scored -> after the last rep the video is closed and the next exercise is offered.
-import { DEMO_PLAN, planExercises } from './js/plan.js';
+import { DEMO_PLAN, planExercises, planExercisesFromVisit, selectExercises } from './js/plan.js';
 import { SessionLog } from './js/sessionLog.js';
 import { ExerciseTracker } from './js/exerciseTracker.js';
 import { store } from './js/store.js';
@@ -34,8 +34,22 @@ function speak(text) {
 }
 
 // ---------------------------------------------------------------- 1. plan
-const PLAN = DEMO_PLAN;
-const EXS = planExercises(PLAN);
+// Prefer the therapist's actual plan from the visit server (saved by dashboard.js under
+// 'visitCopilot.plan' once it loads), then narrow to just the exercises the dashboard linked to
+// (?exercises=id,id), falling back to the fixed demo plan if neither is available/valid.
+function loadVisitPlan() {
+  try {
+    const raw = localStorage.getItem('visitCopilot.plan');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+const visitPlan = loadVisitPlan();
+const PLAN = visitPlan || DEMO_PLAN;
+const EXS = selectExercises(
+  visitPlan ? planExercisesFromVisit(visitPlan) : planExercises(PLAN),
+  new URLSearchParams(location.search).get('exercises'),
+);
 
 function renderPlan() {
   const minutes = Math.max(3, Math.round(EXS.reduce((s, e) => s + e.reps * 5 + 40, 0) / 60));
@@ -334,7 +348,6 @@ async function finishSession() {
     saved.classList.add('err');
     saved.textContent = "Couldn't save this session. There may not be enough space on this phone.";
   }
-  window.__lastSession = summary;     // handy for checking in DevTools
 }
 $('#again').addEventListener('click', () => show('plan'));
 
