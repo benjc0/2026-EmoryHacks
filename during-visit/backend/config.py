@@ -40,6 +40,18 @@ TYPESENSE_EMBED_MODEL = os.getenv("TYPESENSE_EMBED_MODEL", "ts/paraphrase-multil
 # Where the JSON backup of every visit is written (backend/data by default).
 DATA_DIR = os.getenv("DATA_DIR", str(Path(__file__).parent / "data"))
 
+# ---- Hand-off to the main app
+# If set, the full visit is POSTed here as JSON when it ends: {"event": "visit.ended", "visit": {...}}
+MAIN_APP_WEBHOOK_URL = os.getenv("MAIN_APP_WEBHOOK_URL", "")
+# Optional: folder of the PT camera app to serve at /pt on this server (absolute path), and/or the URL the
+# visit summary's "Start home exercises" button opens (patient_id is added). Leave both empty to hide the button.
+PT_APP_DIR = os.getenv("PT_APP_DIR", "")
+PT_APP_URL = os.getenv("PT_APP_URL", "/pt/" if PT_APP_DIR else "")
+# Allow DELETE /api/patients/{id} (the dashboard's "Reset demo data"). Turn off for anything real.
+ALLOW_RESET = os.getenv("ALLOW_RESET", "true").lower() in ("1", "true", "yes")
+# Web origins allowed to call this API from a browser (comma-separated). "*" = anyone (fine for a hackathon).
+CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+
 TYPESENSE_URL = f"{TYPESENSE_PROTOCOL}://{TYPESENSE_HOST}:{TYPESENSE_PORT}" if TYPESENSE_HOST else ""
 
 LANG_NAMES = {

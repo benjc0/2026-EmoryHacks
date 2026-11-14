@@ -62,12 +62,55 @@ DEMO_QUESTIONS_EN = [
     "Will the new medicine make me dizzy?",
 ]
 
+# ------------------------------------------------------------------ Physical therapy (Korean)
+# PT story: English-speaking physical therapist, Korean-speaking grandmother,
+# 2 weeks after a LEFT total knee replacement. Produces a full home workout plan.
+DEMO_PT = [
+    (1.0, "doctor", "Hi Mrs. Kim, I'm Sarah, your physical therapist. How is your left knee two weeks after surgery?",
+     "안녕하세요 김 여사님, 저는 물리치료사 사라입니다. 수술 2주 후 왼쪽 무릎은 어떠세요?"),
+    (3.5, "patient", "아직 아프고 많이 안 굽혀져요. 계단이 무서워요.",
+     "It still hurts and it doesn't bend much. I'm scared of the stairs."),
+    (3.5, "doctor", "That's normal at two weeks. Today your knee bends to 80 degrees. Our goal is 110 degrees in six weeks.",
+     "2주째에는 정상이에요. 오늘 무릎이 80도까지 굽혀져요. 목표는 6주 안에 110도입니다."),
+    (4.0, "doctor", "First exercise: seated knee extensions. Sit in a chair, straighten your left knee slowly, and hold it straight for 2 seconds at the top. 2 sets of 10, three times a day.",
+     "첫 번째 운동은 앉아서 무릎 펴기예요. 의자에 앉아서 왼쪽 무릎을 천천히 펴고, 끝까지 편 상태로 2초 동안 유지하세요. 10회씩 2세트, 하루 세 번이요."),
+    (4.5, "doctor", "Second: mini squats. Stand holding the kitchen counter and bend both knees a little, like you're starting to sit down. 2 sets of 8, twice a day. Keep your chest up.",
+     "두 번째는 미니 스쿼트예요. 부엌 조리대를 잡고 서서, 앉으려는 것처럼 양쪽 무릎을 살짝 굽히세요. 8회씩 2세트, 하루 두 번이요. 가슴을 펴세요."),
+    (3.5, "patient", "운동할 때 아프면 어떻게 해요?",
+     "What should I do if it hurts while exercising?"),
+    (4.0, "doctor", "Some discomfort is okay. If the pain goes above 5 out of 10, stop and rest. Put ice on the knee for 15 minutes after exercising.",
+     "약간 불편한 건 괜찮아요. 통증이 10점 중 5점을 넘으면 멈추고 쉬세요. 운동 후에는 무릎에 15분 동안 얼음찜질을 하세요."),
+    (4.0, "doctor", "For the next two weeks, don't kneel, and don't bend your knees more than 60 degrees during the squats.",
+     "앞으로 2주 동안은 무릎을 꿇지 마시고, 스쿼트할 때 무릎을 60도 넘게 굽히지 마세요."),
+    (3.5, "doctor", "Also walk with your walker for 10 minutes, three times a day.",
+     "그리고 보행기를 사용해서 하루 세 번, 10분씩 걸으세요."),
+    (4.0, "doctor", "Call us right away if the knee gets hot and red, or if your calf is painful or swollen. That could be a blood clot.",
+     "무릎이 뜨겁고 빨개지거나, 종아리가 아프거나 부으면 바로 연락하세요. 혈전일 수 있어요."),
+    (3.5, "doctor", "I'll see you here twice a week for the next six weeks. Any other questions before you go?",
+     "앞으로 6주 동안 일주일에 두 번 여기서 뵐게요. 가시기 전에 다른 질문 있으세요?"),
+]
+
+DEMO_QUESTIONS_PT = [
+    "계단은 어떻게 올라가야 해요?",          # How should I go up stairs?  (never answered -> reminder)
+    "얼음찜질을 해도 돼요?",                 # Can I use ice?               (answered)
+    "운동은 하루에 몇 번 해야 해요?",         # How many times a day?        (answered)
+]
+
 # ------------------------------------------------------------------ picking
+# Scenario name -> (script, sample questions, doctor language, patient language)
+SCENARIOS = {
+    "knee":  (DEMO_KO, DEMO_QUESTIONS_KO, "en", "ko"),   # interpreter: sports knee injury
+    "heart": (DEMO_EN, DEMO_QUESTIONS_EN, "en", "en"),   # captions: hard-of-hearing heart patient
+    "pt":    (DEMO_PT, DEMO_QUESTIONS_PT, "en", "ko"),   # physical therapy -> workout plan
+}
 DEMOS = {"ko": (DEMO_KO, DEMO_QUESTIONS_KO), "en": (DEMO_EN, DEMO_QUESTIONS_EN)}
 
 
-def pick_demo(patient_lang: str):
-    """English patient -> English captions demo; anything else -> Korean interpreter demo."""
+def pick_demo(patient_lang: str, scenario: str | None = None):
+    """Pick by scenario if given; otherwise English patient -> heart demo, anything else -> knee demo."""
+    if scenario in SCENARIOS:
+        script, questions, _, _ = SCENARIOS[scenario]
+        return script, questions
     return DEMOS.get(patient_lang, DEMOS["ko"])
 
 

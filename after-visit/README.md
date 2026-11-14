@@ -1,4 +1,4 @@
-# After Visit: home PT sessions
+# Mend: home PT sessions (after the visit)
 
 **The real session page is `session.html`** (open http://localhost:8000/session.html). It runs the therapist's plan: side arm raise (precise mode, shows degrees), then mini squat (simple mode, no numbers). Each exercise records on its own, reps are scored and spoken, and the whole session is saved on the device for the therapist.
 

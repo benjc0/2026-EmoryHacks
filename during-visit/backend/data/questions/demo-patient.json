@@ -1,0 +1,23 @@
+[
+  {
+    "id": "7d9d55ca9f05",
+    "text": "Can I still have a glass of wine with dinner?",
+    "source": "visit",
+    "visit_id": "c40a1d37fc4a",
+    "created": 1794690832.506824
+  },
+  {
+    "id": "1ac3e1518044",
+    "text": "Is it safe for me to drive?",
+    "source": "visit",
+    "visit_id": "c40a1d37fc4a",
+    "created": 1794690832.506824
+  },
+  {
+    "id": "1e10c36d61d5",
+    "text": "Will the new medicine make me dizzy?",
+    "source": "visit",
+    "visit_id": "c40a1d37fc4a",
+    "created": 1794690832.506824
+  }
+]

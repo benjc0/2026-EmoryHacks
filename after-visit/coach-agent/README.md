@@ -1,4 +1,4 @@
-# FaceTime coach
+# Mend FaceTime coach
 
 The second way to do a home PT session. Instead of recording in the browser (`../session.html`), the patient
 gets a FaceTime call from an AI coach. The coach talks them through the therapist's plan, watches the camera,
@@ -16,7 +16,7 @@ It reuses the browser app's plain-JS modules (`../js/plan.js`, `exerciseTracker.
 
 ## What a session sounds like
 
-1. "Hi, I'm your AI exercise coach. First: side arm raise. Face the camera… 5 reps. Aim for 140 degrees.
+1. "Hi, I'm Mend, your AI exercise coach. First: side arm raise. Face the camera… 5 reps. Aim for 140 degrees.
    I'll start counting when I can see you."
 2. If it can't see the right body parts: "I can't see your head down to your hips yet. Step back a little."
 3. Each rep: "2. Good rep." / "3. Raise your arm a little higher." / "One to go!"

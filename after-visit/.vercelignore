@@ -1,0 +1,9 @@
+# Only the patient web app is deployed. The FaceTime coach runs on its own (see coach-agent/README.md).
+coach-agent/
+coach-test.html
+tests/
+node_modules/
+package.json
+package-lock.json
+.env*
+.vercel/

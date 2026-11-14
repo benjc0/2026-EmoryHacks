@@ -14,7 +14,9 @@ const I18N = {
         keyPoints: "Key points", forDoctor: "For the doctor / family", carry: "Questions to ask next time",
         saved: "Saved to your records", nothing: "Notes will appear here as the doctor talks.", reading: "Reading the paper…",
         qForDoctor: "Question for the doctor", writing: "Writing your summary…",
-        failed: "The summary couldn't be written right now. Your notes below are complete." },
+        failed: "The summary couldn't be written right now. Your notes below are complete.", back: "Back to the app",
+        sets: "sets", reps: "reps", hold: "hold", day: "day", left: "left", right: "right", limit: "Don't bend past",
+        painRule: "Stop if pain is above", program: "Exercise program", planReady: "Saved as your home exercise plan", homeEx: "Start home exercises" },
   ko: { captions: "자막", questions: "질문", notes: "메모", scan: "서류 스캔", speak: "소리로 듣기", size: "글자 크기",
         end: "진료 끝", listening: "듣고 있어요… 말씀하세요.", doctor: "의사", patient: "환자·가족",
         beforeYouGo: "가시기 전에 — 아직 묻지 않은 질문:", showDoctor: "의사에게 보여주기", open: "아직 안 물음",
@@ -22,7 +24,9 @@ const I18N = {
         todo: "할 일 · 주의 사항", papers: "스캔한 서류", summary: "진료 요약", keyPoints: "핵심 내용",
         forDoctor: "의사·가족용", carry: "다음에 물어볼 질문", saved: "기록에 저장됨",
         nothing: "의사가 말하면 여기에 메모가 나타나요.", reading: "서류를 읽는 중…", qForDoctor: "의사에게 하는 질문",
-        writing: "요약을 작성하는 중…", failed: "지금은 요약을 만들 수 없어요. 아래 메모는 모두 저장되어 있어요." },
+        writing: "요약을 작성하는 중…", failed: "지금은 요약을 만들 수 없어요. 아래 메모는 모두 저장되어 있어요.", back: "앱으로 돌아가기",
+        sets: "세트", reps: "회", hold: "유지", day: "하루", left: "왼쪽", right: "오른쪽", limit: "이 각도 이상 굽히지 마세요:",
+        painRule: "통증이 이 이상이면 멈추세요:", program: "운동 계획", planReady: "집에서 하는 운동 계획으로 저장됨", homeEx: "집에서 운동 시작하기" },
 };
 
 const $ = (s) => document.querySelector(s);
@@ -53,6 +57,35 @@ async function api(path, opts = {}) {
   return r.json();
 }
 
+// ---------------------------------------------------------------- link from the main app
+// e.g. /?patient_id=p123&patient_lang=ko&provider=Dr.%20Lee&q=Side%20effects%3F&q=Can%20he%20play%3F&return_url=https://main.app/home
+const params = new URLSearchParams(location.search);
+const link = {
+  patientId: params.get("patient_id") || "demo-patient",
+  returnUrl: /^https?:\/\//i.test(params.get("return_url") || "") ? params.get("return_url") : null,
+};
+
+function applyLinkParams() {
+  if (link.returnUrl) {           // opened from another app (e.g. the dashboard): offer a way back
+    const back = document.createElement("a");
+    back.className = "backtop"; back.href = link.returnUrl; back.textContent = "← Back";
+    back.setAttribute("aria-label", "Back to the previous app");
+    $("#screen-setup").prepend(back);
+  }
+  if (params.get("doctor_lang")) $("#doctor-lang").value = params.get("doctor_lang");
+  if (params.get("patient_lang")) $("#patient-lang").value = params.get("patient_lang");
+  if (params.get("provider")) $("#provider").value = params.get("provider");
+  const qs = [...params.getAll("q"), ...(params.get("questions") || "").split("\n")].map((s) => s.trim()).filter(Boolean);
+  if (qs.length) $("#questions").value = qs.join("\n");
+  else if (params.has("patient_id")) {
+    // questions the patient saved at home (dashboard) or didn't get to ask last time
+    api(`/api/patients/${encodeURIComponent(link.patientId)}/questions`)
+      .then(({ questions }) => { if (questions.length && !$("#questions").value.trim()) $("#questions").value = questions.map((q) => q.text).join("\n"); })
+      .catch(() => {});
+  }
+  if (params.has("patient_id")) $(".sub").textContent += ` · ${link.patientId}`;
+}
+
 // ---------------------------------------------------------------- setup screen
 function initSetup() {
   for (const [id, def] of [["#doctor-lang", "en"], ["#patient-lang", "ko"]]) {
@@ -62,11 +95,23 @@ function initSetup() {
   $("#consent").addEventListener("change", (e) => {
     $("#start-btn").disabled = $("#demo-btn").disabled = !e.target.checked;
   });
-  $("#load-demo-q").addEventListener("click", async () => {
-    const { questions } = await api(`/api/demo-questions?lang=${$("#patient-lang").value}`);
+  const loadDemoQuestions = async () => {
+    const scenario = $("#demo-scenario")?.value || "";
+    const { questions } = await api(`/api/demo-questions?lang=${$("#patient-lang").value}&scenario=${scenario}`);
     $("#questions").value = questions.join("\n");
-  });
+  };
+  $("#load-demo-q").addEventListener("click", loadDemoQuestions);
+  // Picking a demo sets the matching languages and sample questions.
+  if (!$("#demo-scenario")) console.warn("index.html is out of date: no demo picker (replace frontend/index.html)");
+  api("/api/demo-scenarios").then((sc) => {
+    $("#demo-scenario")?.addEventListener("change", async () => {
+      const s = sc[$("#demo-scenario").value];
+      if (s) { $("#doctor-lang").value = s.doctor_lang; $("#patient-lang").value = s.patient_lang; }
+      await loadDemoQuestions();
+    });
+  }).catch(() => {});
   $("#setup-form").addEventListener("submit", (e) => { e.preventDefault(); start("mic"); });
+  applyLinkParams();
   $("#demo-btn").addEventListener("click", () => start("demo"));
 }
 
@@ -81,6 +126,7 @@ async function start(mode) {
       });
     }
     state.visit = await api("/api/visits", { method: "POST", body: JSON.stringify({
+      patient_id: link.patientId,
       doctor_lang: $("#doctor-lang").value, patient_lang: $("#patient-lang").value,
       provider: $("#provider").value.trim(),
       questions: $("#questions").value.split("\n").map((s) => s.trim()).filter(Boolean),
@@ -135,7 +181,7 @@ function connect(mode) {
       ws.send(JSON.stringify({ type: "start_audio" }));
       if (!state.worklet) await startMic();
     } else if (mode === "demo") {
-      ws.send(JSON.stringify({ type: "demo" }));
+      ws.send(JSON.stringify({ type: "demo", scenario: $("#demo-scenario")?.value || null }));
       $("#live-dot").classList.add("on");
     }
   };
@@ -271,14 +317,33 @@ function renderNotes() {
   const diag = (n.diagnoses || []).map((d) => `<div class="nitem"><div class="t">${esc(d.name)}</div><div class="d">${esc(d.explanation_patient_lang)}</div></div>`);
   const meds = (n.medications || []).map((m) => `<div class="nitem"><div class="t">${esc(m.name)} ${m.dose ? `<span class="num">${esc(m.dose)}</span>` : ""}${docTag(m)}</div>
       <div>${hl([m.frequency, m.instructions].filter(Boolean).join(" · "))}</div><div class="d">${hl(m.explanation_patient_lang)}</div></div>`);
-  const ex = (n.exercises || []).map((x) => `<div class="nitem"><div class="t">${esc(x.name)}</div>
-      <div>${hl([x.sets && `${x.sets} sets`, x.reps && `${x.reps} reps`, x.frequency].filter(Boolean).join(" · "))}</div>
-      <div class="d">${hl(x.explanation_patient_lang)}</div></div>`);
+  const ex = (n.exercises || []).map((x) => {
+    const sideTag = x.side && x.side !== "both" ? `<span class="tag">${esc(t(x.side))}</span>` : "";
+    const sets = x.sets_count || x.sets, reps = x.reps_count || x.reps;
+    const dose = [sets && reps ? `${sets} × ${reps}` : sets ? `${sets} ${t("sets")}` : reps ? `${reps} ${t("reps")}` : "",
+                  x.hold_seconds && `${t("hold")} ${x.hold_seconds}s`,
+                  x.times_per_day ? `${x.times_per_day}× / ${t("day")}` : x.frequency,
+                  x.duration_minutes && `${x.duration_minutes} min`].filter(Boolean).join(" · ");
+    const limit = x.limit_deg ? `<div class="limit">⛔ ${esc(t("limit"))} ${x.limit_deg}°</div>` : "";
+    const cues = (x.form_cues || []).length ? `<ul class="cues">${x.form_cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : "";
+    return `<div class="nitem ex"><div class="t">${esc(x.name)}${sideTag}</div>
+      ${dose ? `<div class="dose">${hl(dose)}</div>` : ""}${limit}
+      <div class="d">${hl(x.explanation_patient_lang)}</div>${cues}</div>`;
+  });
+  const th = n.therapy;
+  const program = th ? [
+    ...(th.goals || []).map((g) => `<div class="nitem"><div class="t">🎯 ${hl(g)}</div></div>`),
+    ...(th.precautions_patient_lang?.length ? th.precautions_patient_lang : th.precautions || [])
+       .map((p) => `<div class="nitem warning_sign"><div class="t">${hl(p)}</div></div>`),
+    th.pain_stop_level != null ? `<div class="nitem"><div class="t">${esc(t("painRule"))} ${th.pain_stop_level}/10</div></div>` : "",
+    th.after_exercise ? `<div class="nitem"><div class="t">🧊 ${hl(th.after_exercise)}</div></div>` : "",
+  ].filter(Boolean) : [];
+  if (ex.length) ex.push(`<p class="plan-note">✓ ${esc(t("planReady"))}</p>`);
   const order = { warning_sign: 0, follow_up: 1, test: 2, referral: 3, instruction: 4 };
   const care = [...(n.care_items || [])].sort((a, b) => (order[a.type] ?? 9) - (order[b.type] ?? 9))
     .map((c) => `<div class="nitem ${esc(c.type)}"><div class="t">${hl(c.text_patient_lang)}${docTag(c)}</div><div class="d">${hl(c.text)}${c.due ? ` · ${esc(c.due)}` : ""}</div></div>`);
   const papers = state.scans.map((s) => `<div class="nitem"><div class="t">📄 ${esc(s.document_type)}</div><div>${hl(s.text_patient_lang)}</div></div>`);
-  const html = sec(t("diagnosis"), diag) + sec(t("meds"), meds) + sec(t("exercises"), ex) + sec(t("todo"), care) + sec(t("papers"), papers);
+  const html = sec(t("diagnosis"), diag) + sec(t("meds"), meds) + sec(t("exercises"), ex) + sec(t("program"), program) + sec(t("todo"), care) + sec(t("papers"), papers);
   el.innerHTML = html || `<p class="empty">${esc(t("nothing"))}</p>`;
   const count = diag.length + meds.length + ex.length + care.length + papers.length;
   const onNotes = $("#pane-notes").classList.contains("active");
@@ -368,7 +433,9 @@ function renderSummary(v) {
     <div id="sum-notes"></div>
     ${open.length ? `<div class="card"><h3>${esc(t("carry"))}</h3><ul class="keypoints">${open.map((q) => `<li>${esc(q.text)}</li>`).join("")}</ul></div>` : ""}
     ${s.summary_doctor_lang ? `<details class="card"><summary><b>${esc(t("forDoctor"))}</b></summary><p>${hl(s.summary_doctor_lang)}</p></details>` : ""}
-    ${v.saving ? `<p class="saved">✓ ${esc(t("saved"))}</p>` : ""}`;
+    ${v.saving ? `<p class="saved">✓ ${esc(t("saved"))}</p>` : ""}
+    ${v.pt_app_url && (v.notes?.exercises || []).length ? `<a class="primary big backlink" href="${esc(v.pt_app_url + (v.pt_app_url.includes("?") ? "&" : "?") + "patient_id=" + encodeURIComponent(v.patient_id || link.patientId))}">🏋️ ${esc(t("homeEx"))}</a>` : ""}
+    ${link.returnUrl ? `<a class="primary big backlink" href="${esc(link.returnUrl + (link.returnUrl.includes("?") ? "&" : "?") + "visit_id=" + encodeURIComponent(v.id))}">${esc(t("back"))}</a>` : ""}`;
   renderNotes();
   $("#sum-notes").appendChild($("#notes"));
   show("summary");

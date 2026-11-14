@@ -16,12 +16,14 @@ import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import config
 import extract
+import integration
 import search_index
 import storage
 from demo_script import pick_demo
@@ -31,6 +33,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 log = logging.getLogger("main")
 
 app = FastAPI(title="Visit Copilot")
+app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS,
+                   allow_methods=["*"], allow_headers=["*"])
+app.include_router(integration.router)
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 
 
@@ -91,6 +96,7 @@ class Visit:
                 "questions": self.questions, "notes": self.merged_notes(),
                 "utterances": self.utterances, "summary": self.summary,
                 "summary_pending": bool(self.finish_task and not self.finish_task.done()),
+                "pt_app_url": config.PT_APP_URL,
                 "summary_failed": self.summary_failed}
 
     def record(self) -> dict:
@@ -160,9 +166,17 @@ class Visit:
                                       emit=self.emit, on_final=self.add_utterance)
         await self.interp.start()
 
-    async def run_demo(self):
+    async def run_demo(self, scenario: str | None = None):
+        try:
+            await self._run_demo(scenario)
+        except Exception as e:   # never hang silently on "Listening..."
+            log.exception("demo failed")
+            await self.emit({"type": "status", "level": "warn",
+                             "text": f"Demo failed: {e}. Check that all backend files are the latest version."})
+
+    async def _run_demo(self, scenario: str | None = None):
         t0 = time.time()
-        script, _ = pick_demo(self.patient_lang)
+        script, _ = pick_demo(self.patient_lang, scenario)
         for delay, speaker, original, translated in script:
             await asyncio.sleep(delay)
             utt = {"id": uuid.uuid4().hex[:10], "speaker": speaker, "original": original,
@@ -214,8 +228,14 @@ async def start_visit(req: StartVisit):
 
 
 @app.get("/api/demo-questions")
-async def demo_questions(lang: str = "ko"):
-    return {"questions": pick_demo(lang)[1]}
+async def demo_questions(lang: str = "ko", scenario: str | None = None):
+    return {"questions": pick_demo(lang, scenario)[1]}
+
+
+@app.get("/api/demo-scenarios")
+async def demo_scenarios():
+    from demo_script import SCENARIOS
+    return {k: {"doctor_lang": d, "patient_lang": p} for k, (_, _, d, p) in SCENARIOS.items()}
 
 
 @app.get("/api/visits/{vid}")
@@ -289,7 +309,7 @@ async def end_visit(vid: str):
         log.info("summary still running after %ss; page will poll for it", config.SUMMARY_WAIT_SEC)
     await v.emit({"type": "ended"})
     return {**v.public(), "summary_pending": not v.finish_task.done(),
-            "saving": bool(config.TYPESENSE_URL)}
+            "saving": bool(config.TYPESENSE_URL), "pt_app_url": config.PT_APP_URL}
 
 
 async def _finish_visit(v: "Visit"):
@@ -314,6 +334,11 @@ async def _finish_visit(v: "Visit"):
         else:
             v.summary = results[0].model_dump(mode="json")
     await v.save()                      # backup first, so nothing is lost if Typesense fails
+    try:
+        await asyncio.to_thread(integration.sync_questions_after_visit, v.record())
+    except Exception as e:
+        log.warning("question sync failed: %s", e)
+    await integration.notify_main_app(v.record())
     if config.TYPESENSE_URL:
         await _index_in_background(v)
 
@@ -352,7 +377,7 @@ async def visit_socket(ws: WebSocket, vid: str):
                 await v.start_live()
                 await v.emit({"type": "status", "level": "ok", "text": "Interpreter listening"})
             elif kind == "demo":
-                v.tasks.append(asyncio.create_task(v.run_demo()))
+                v.tasks.append(asyncio.create_task(v.run_demo(data.get("scenario"))))
             elif kind == "remind_now":
                 v.reminded.clear()
                 await v.remind_open_questions(reason="manual")
@@ -363,6 +388,11 @@ async def visit_socket(ws: WebSocket, vid: str):
 
 
 # ---------------------------------------------------------------- frontend
+
+# Optional: serve the PT camera app at /pt (set PT_APP_DIR in .env), so it can fetch plans without CORS setup.
+if config.PT_APP_DIR and Path(config.PT_APP_DIR).is_dir():
+    app.mount("/pt", StaticFiles(directory=config.PT_APP_DIR, html=True), name="pt")
+
 
 @app.get("/")
 async def index():

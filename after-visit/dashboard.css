@@ -1,1 +1,213 @@
-.shell{max-width:1200px;margin:auto;padding:0 24px 40px}.mast{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:100px;border-bottom:1px solid var(--hairline)}.brand{display:flex;align-items:center;gap:12px;color:var(--fg);font-size:22px;text-decoration:none;font-weight:500}.brand-mark{display:grid;place-items:center;background:var(--primary-soft);width:42px;height:42px;border-radius:14px;font-size:32px}.greeting{padding:44px 0 32px;display:flex;justify-content:space-between;gap:20px;align-items:center;position:relative}.greeting h1{font-size:38px;margin:8px 0}.eyebrow{font-size:16px;color:var(--muted)}.calendar{padding:24px;margin-bottom:16px}.calendar .week{max-width:850px;margin:20px auto;position:relative}.calendar .week:before{content:"";position:absolute;top:55px;left:7%;right:7%;height:2px;background:var(--primary-soft)}.day{position:relative;z-index:1;min-width:0}.day__dot{background:var(--surface);border-color:var(--border);width:48px;height:48px}.day.today .day__dot{outline:2px solid var(--accent-ink);outline-offset:4px}.day.done .day__dot{background:var(--primary-soft)}.day:hover .day__dot{background:var(--chip)}.dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.exercises{grid-column:1/-1;padding:24px;display:flex;flex-direction:column}.progress-copy{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:24px 0}.progress-copy .display{font-size:clamp(36px,6vw,64px)}.stones{display:flex;gap:16px;align-items:center;margin:8px 0 28px}.stone{display:grid;place-items:center;width:48px;height:48px;background:var(--accent);color:var(--on-accent);border-radius:50%;border:2px dashed var(--accent-ink);animation:arrive .4s ease-out both}.stone.done{background:var(--fg);color:var(--bg);border:0}.stone:not(:last-child):after{content:"";position:absolute;margin-left:64px;width:16px;border-top:2px dotted var(--border)}.exercise-row{display:flex;align-items:center;gap:16px;padding:24px 0;border-bottom:1px solid var(--hairline)}.exercise-row .text{flex:1;min-width:0}.exercise-row h3{margin-bottom:6px}.badge{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--blue-soft)}.badge.peach{background:var(--accent-soft)}.exercise-footer{margin-top:auto;padding-top:32px;display:grid;gap:16px}.exercise-footer .btn{min-height:64px}.appointments,.medicine,.questions{padding:24px;min-width:0}.appointments h2,.medicine h2{font-size:18px}.appointments .section-head,.medicine .section-head{align-items:start}.big-date{font-size:22px;margin:16px 0 8px}.questions{grid-column:1/-1}.questions ul{padding:0;list-style:none;margin:16px 0}.questions li{border-bottom:1px solid var(--hairline);padding:16px 0;display:flex;align-items:start;gap:12px;overflow-wrap:anywhere}.questions li span{flex:1}.questions label{display:block;margin-bottom:8px}.questions form{display:grid;gap:12px}.question-input{display:flex;gap:8px}.question-input input{min-width:0}.page-footer{text-align:center;margin:32px 0;color:var(--muted);font-size:16px}.skip{position:fixed;top:-100px}.skip:focus{top:8px;z-index:9;background:var(--surface);padding:16px}dialog{color:var(--fg);background:var(--bg);border:0;border-radius:28px;padding:24px;width:min(960px,calc(100% - 40px));max-height:90dvh;overscroll-behavior:contain}dialog::backdrop{background:rgb(15 43 64 / .45)}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:-24px;background:var(--bg);padding:12px 0;z-index:1}.plan-item{margin:24px 0;border-bottom:1px solid var(--hairline);padding-bottom:24px}.plan-item summary{padding:16px 0;cursor:pointer;font-size:22px}.plan-item p,.plan-item ol,.plan-item h3{margin:16px 0}.pose-demo{display:grid;place-items:center;aspect-ratio:16/9;background:var(--tile);border-radius:20px;max-height:260px}.pose-demo svg{width:100px;height:140px}.safety{padding:16px;border-radius:14px;background:var(--fair-bg);color:var(--fair)}blockquote{border-left:3px solid var(--primary-ink);margin:24px 0;padding:0 16px}.sticky-action{position:sticky;bottom:-24px;background:var(--bg);padding:16px 0}.btn{white-space:normal;text-align:center}.icon{pointer-events:none}#notice{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);z-index:20;background:var(--fg);color:var(--bg);padding:16px 24px;border-radius:20px}.btn:hover{filter:brightness(.96)}@keyframes arrive{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}@media(min-width:1024px){.dashboard{grid-template-columns:2fr 1fr}.exercises{grid-column:1;grid-row:1/4}.questions{grid-column:2}.day-panel{margin:0 0 0 auto;width:430px;height:100dvh;max-height:100dvh;border-radius:24px 0 0 24px}.calendar .section-head{margin-bottom:0}.questions{display:flex;flex-direction:column}.questions form{margin-top:auto}}@media(max-width:600px){.shell{padding:0 16px 32px}.mast{min-height:80px}.brand{font-size:18px;gap:8px}.mast .row{gap:0}.mast .btn{font-size:16px;padding:0 8px}.greeting{padding-top:28px;align-items:start;flex-direction:column;gap:12px}.greeting h1{font-size:30px}.greeting .chip{align-self:start}.calendar{padding:24px 16px}.week{gap:0}.day__dot{width:40px;height:40px}.calendar .week:before{top:51px}.dashboard{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}.progress-copy{align-items:start;flex-direction:column}.exercise-row{gap:12px;flex-wrap:wrap}.exercise-row .btn{margin-left:auto}.exercises{padding:24px}.section-head{flex-wrap:wrap}.questions .section-head{flex-wrap:nowrap}.appointments,.medicine{padding:24px}.appointments h2,.medicine h2{overflow-wrap:anywhere}dialog{width:100%;height:100dvh;max-height:100dvh;margin:0;border-radius:0}body:has(dialog[open]){overflow:hidden}.page-footer{margin-bottom:32px}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+/* Patient dashboard. Follows design-system/ai-clinic-assistant/pages/patient-dashboard.md and the
+   dashboard + "Exercise plan, full screen" mocks in design-preview.html. Base tokens and components: tokens.css. */
+
+.dash { gap: var(--space-3); padding-bottom: calc(var(--space-6) + 56px + var(--safe-b)); }
+
+/* ---------- greeting (+ soft shapes) */
+.greet-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); }
+.greet { position: relative; isolation: isolate; padding-top: var(--space-1); }
+.greet .blobs { position: absolute; right: -28px; top: -34px; width: 118px; z-index: -1; }
+.brand { font-size: var(--fs-sm); font-weight: var(--w-medium); color: var(--muted); letter-spacing: 0; }
+.greet h1 { font-size: 26px; font-weight: var(--w-medium); letter-spacing: -0.02em; margin-top: 2px; }
+.greet__date { color: var(--muted); font-size: var(--fs-sm); margin-top: 2px; }
+.greet-actions { display: flex; gap: var(--space-1); align-items: center; flex: none; }
+
+/* ---------- 1. week card: streak pill, days on a path that fills up to today */
+.cal-card { padding: var(--space-3) var(--space-3) var(--space-2); }
+.week-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); flex-wrap: wrap; }
+.week-cheer { color: var(--muted); font-size: var(--fs-sm); }
+.week-track { position: relative; }
+.week-track::before, .week-fill { content: ""; position: absolute; top: calc(4px + 1.55em + 6px + 22px - 2px); height: 4px; border-radius: 2px; }
+.week-track::before { left: calc(100% / 14); right: calc(100% / 14); background: var(--hairline); }
+.week-fill { left: calc(100% / 14); width: 0; background: var(--primary); }
+.week .day__dot { position: relative; background: var(--surface); border-color: var(--hairline); }
+.week .day--done .day__dot { background: var(--primary-soft); border-color: transparent; }
+.week .day--today .day__dot { border-color: var(--accent-ink); }
+.day__dow--long { display: none; }
+
+/* ---------- 2. today's exercises */
+.ex-hero { display: flex; flex-direction: column; }
+.ex-head { margin: 0; align-items: flex-start; }
+.hero-h { font-size: 30px; font-weight: var(--w-medium); letter-spacing: -0.02em; }
+.hero-sub { color: var(--muted-on-tile); margin-top: 2px; }
+.btn--icon-surface { background: var(--surface); border-color: transparent; }
+.stones { width: 100%; max-width: 360px; height: auto; display: block; margin: var(--space-2) 0 var(--space-1); }
+.stones text { font-family: var(--font); }
+.stone { transform-box: fill-box; transform-origin: center; animation: hop .5s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes hop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.ex-list { list-style: none; margin: 0 0 var(--space-3); padding: 0; }
+.ex-list li { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-top: 1px solid var(--hairline); }
+.ex-list li:first-child { border-top: 0; }
+.ex-list .grow { flex: 1; min-width: 0; }
+.ex-list b { font-weight: var(--w-medium); }
+.ex-list small { display: block; color: var(--muted-on-tile); font-size: var(--fs-sm); }
+.ex-list .done { color: var(--muted-on-tile); }
+.tick { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--good); flex: none; }
+.ring { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border); flex: none; }
+.hero-foot { display: flex; flex-direction: column; gap: var(--space-3); margin-top: auto; }
+.note { font-size: var(--fs-sm); color: var(--muted-on-tile); margin: 0; }
+
+/* ---------- 3 + 4. next visit and medicine */
+.side { display: grid; gap: var(--space-3); }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
+.tile-head { display: flex; align-items: center; gap: var(--space-2); }
+.mini { padding: var(--space-3); }
+.mini .tile-head { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
+.mini__k { font-size: var(--fs-sm); font-weight: var(--w-regular); color: var(--muted); letter-spacing: 0; }
+.mini__v { margin-top: 2px; font-size: var(--fs-body); }
+.mini__v small { display: block; color: var(--muted); font-size: var(--fs-sm); }
+
+/* ---------- 5. questions */
+.questions { display: flex; flex-direction: column; }
+.q-head { margin-bottom: var(--space-1); }
+.q-title { font-size: var(--fs-title); }
+.qlist { list-style: none; margin: 0; padding: 0; }
+.qlist li { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-2) 0; border-top: 1px solid var(--hairline); overflow-wrap: anywhere; }
+.qlist li:first-child { border-top: 0; }
+.qlist input[type="checkbox"] { width: 22px; height: 22px; margin-top: 3px; accent-color: var(--primary-ink); flex: none; }
+.qlist .q-text { flex: 1; min-width: 0; }
+.qlist small { display: block; color: var(--muted); font-size: var(--fs-sm); }
+.qlist .asked .q-body { text-decoration: line-through; color: var(--muted); }
+.qlist .q-remove { margin: -10px -8px -10px 0; border-color: transparent; color: var(--muted); }
+.qlist .q-empty { color: var(--muted); }
+.addq { display: flex; gap: var(--space-1); margin-top: var(--space-2); }
+.addq .input { border-radius: var(--r-pill); min-width: 0; }
+.addq .input[aria-invalid="true"] { border-color: var(--poor); }
+.q-hint { margin-top: 6px; }
+.q-hint.err { color: var(--poor); }
+
+/* ---------- help: round button on phones */
+.fab { position: fixed; right: var(--space-4); bottom: calc(var(--space-4) + var(--safe-b)); width: 56px; height: 56px; border-radius: 50%; border: 0;
+       background: var(--fg); color: var(--bg); display: grid; place-items: center; cursor: pointer; z-index: 10; transition: transform var(--ease); }
+.fab:active { transform: scale(.96); }
+
+.nowrap { white-space: nowrap; }
+
+/* ---------- Visit Copilot links (shown only when the visit server answers) */
+.visit-btn { text-decoration: none; }
+.visit-btn[hidden], .visit-q-link[hidden] { display: none; }
+.visit-q-link { display: inline-flex; align-items: center; min-height: var(--target); font-size: var(--fs-sm); margin-top: var(--space-1); }
+@media (max-width: 767px) {
+  .visit-btn { width: var(--target); padding: 0; }
+  .visit-btn__label { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
+/* ---------- phones: 16 px gutter (MASTER), and room for seven ≥ 44 px day buttons */
+@media (max-width: 767px) {
+  .dash { padding-left: var(--space-3); padding-right: var(--space-3); padding-top: var(--space-4); }
+  .greet h1 { font-size: clamp(22px, 6.4vw, 26px); }
+}
+@media (max-width: 479px) {
+  .cal-card { padding-left: var(--space-1); padding-right: var(--space-1); }
+  .cal-card .week-head { padding: 0 var(--space-1); }
+  .cal-card .week { gap: 0; }
+  .cal-card .day__dot { width: 40px; height: 40px; }
+  .week-track::before, .week-fill { top: calc(4px + 1.55em + 6px + 20px - 2px); }
+}
+
+/* ---------- tablet: a little more room, same order */
+@media (min-width: 768px) {
+  .greet h1 { font-size: 30px; }
+}
+
+/* ---------- PC: greeting + Help, week full width, exercises left, a stretched right column */
+@media (min-width: 1024px) {
+  .dash { display: grid; grid-template-columns: 1.5fr 1fr; grid-template-areas: "greet greet" "week week" "ex side"; align-items: stretch; padding-bottom: calc(var(--space-6) + 56px + var(--safe-b)); }
+  .greet-row { grid-area: greet; align-items: center; }
+  .greet .blobs { right: auto; left: 300px; }
+  .cal-card { grid-area: week; }
+  .cal-card .week-head { margin-bottom: var(--space-1); }
+  .day__dow--short { display: none; }
+  .day__dow--long { display: inline; }
+  .ex-hero { grid-area: ex; }
+  .hero-foot { flex-direction: row; justify-content: space-between; align-items: center; }
+  .hero-foot .btn { flex: none; width: auto; padding: 0 var(--space-5); }
+  .side { grid-area: side; grid-template-rows: auto auto 1fr; }
+  .pair { display: contents; }
+  .mini { padding: var(--space-3) var(--space-4); }
+  .mini .tile-head { flex-direction: row; align-items: center; gap: var(--space-2); }
+  .questions .addq { margin-top: auto; padding-top: var(--space-2); }
+}
+
+/* ---------- dialogs: exercise plan (full screen on phones, a centred panel on PC) and day detail */
+dialog { color: var(--fg); background: var(--bg); border: 0; border-radius: 36px; padding: 0; width: min(960px, calc(100% - 40px)); max-height: 90dvh; overscroll-behavior: contain; }
+dialog::backdrop { background: rgb(15 43 64 / .45); }
+.modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); padding: var(--space-4) var(--space-4) var(--space-3);
+              position: sticky; top: 0; background: var(--bg); z-index: 1; }
+.modal-head h2 { font-size: 26px; font-weight: var(--w-regular); }
+.modal-sub { color: var(--muted); font-size: var(--fs-sm); margin-top: 4px; }
+.modal-sub:empty { display: none; }
+#detail-body { padding: 0 var(--space-4) var(--space-4); display: grid; gap: var(--space-3); }
+.safety { display: flex; gap: var(--space-1); align-items: flex-start; color: var(--fair); background: var(--fair-bg); padding: var(--space-2) var(--space-3); border-radius: var(--r-tile); font-size: var(--fs-sm); }
+.safety .icon { margin-top: 3px; }
+.done-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--hairline); }
+.plan-ex { display: grid; gap: var(--space-4); }
+.plan-ex + .plan-ex { padding-top: var(--space-4); border-top: 1px solid var(--hairline); }
+.plan-ex h3 { font-size: var(--fs-title); }
+.demo { width: 100%; aspect-ratio: 16 / 10; max-height: 260px; border-radius: var(--r-tile); background: var(--tile); display: grid; place-items: center; position: relative; color: var(--muted-on-tile); }
+.demo > svg { width: 72px; height: 72px; stroke-width: 1.25; }
+
+/* ---------- animated how-to drawings (js/exerciseArt.js) */
+.demo:has(.art__svg) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); padding: var(--space-2); }
+.demo .art__svg { flex: 1 1 0; min-height: 0; width: auto; max-height: 200px; aspect-ratio: 1; stroke-width: initial; color: var(--fg); --art-move: var(--accent-ink); overflow: visible; }
+.demo:has(.art__svg) .demo__cap { position: static; flex: none; }
+.art__ghost { opacity: .35; }
+.art__prop { opacity: .5; }
+.art__move { transform-box: view-box; }
+.art__move--raise { animation: art-raise 3.2s ease-in-out infinite; }
+.art__move--reach { animation: art-reach 4s ease-in-out infinite; }
+.art__move--kick  { animation: art-kick 3.6s ease-in-out infinite; }
+.art__pose--a { animation: art-pose-a 3.2s ease-in-out infinite; }
+.art__pose--b { animation: art-pose-b 3.2s ease-in-out infinite; }
+.art__ghost-pose { display: none; }
+@keyframes art-raise { 0%, 15% { transform: rotate(0); } 45%, 65% { transform: rotate(-125deg); } 95%, 100% { transform: rotate(0); } }
+@keyframes art-reach { 0%, 12% { transform: rotate(0); } 40%, 75% { transform: rotate(-165deg); } 97%, 100% { transform: rotate(0); } }
+@keyframes art-kick  { 0%, 15% { transform: rotate(0); } 42%, 70% { transform: rotate(-80deg); } 95%, 100% { transform: rotate(0); } }
+@keyframes art-pose-a { 0%, 30% { opacity: 1; } 42%, 82% { opacity: 0; } 94%, 100% { opacity: 1; } }
+@keyframes art-pose-b { 0%, 30% { opacity: 0; } 42%, 82% { opacity: 1; } 94%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  /* No loop: show the finished movement over the dashed start position. */
+  .art__move, .art__pose { animation: none !important; }
+  .art__move--raise { transform: rotate(-125deg); }
+  .art__move--reach { transform: rotate(-165deg); }
+  .art__move--kick  { transform: rotate(-80deg); }
+  .art__pose--a { opacity: 0; }
+  .art__pose--b { opacity: 1; }
+  .art__ghost-pose { display: inline; }
+}
+.demo__cap { position: absolute; left: var(--space-2); bottom: var(--space-2); display: inline-flex; align-items: center; gap: var(--space-1);
+             min-height: 44px; padding: 0 var(--space-3); border-radius: var(--r-pill); background: var(--surface); color: var(--fg); font-size: var(--fs-sm); }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1); margin: 0; }
+.facts > div { background: var(--chip); border-radius: var(--r-control); padding: var(--space-2) var(--space-3); }
+.facts dt { color: var(--muted); font-size: var(--fs-sm); }
+.facts dd { margin: 2px 0 0; font-size: var(--fs-lg); }
+.plan-ex h4 { margin-bottom: 6px; }
+.plan-ex ol { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.checks li { display: flex; gap: var(--space-1); align-items: flex-start; }
+.checks .icon { color: var(--good); margin-top: 3px; }
+.quote { margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--primary-ink); }
+.quote small { display: block; color: var(--muted); font-size: var(--fs-sm); margin-top: 4px; }
+.plan-foot { position: sticky; bottom: 0; padding: var(--space-3) 0 var(--space-1); background: var(--bg); border-top: 1px solid var(--hairline); }
+.day-list { list-style: none; margin: 0; padding: 0; }
+.day-list li { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-top: 1px solid var(--hairline); }
+.day-list li:first-child { border-top: 0; }
+.day-list .grow { flex: 1; min-width: 0; }
+.day-list small { display: block; color: var(--muted); font-size: var(--fs-sm); }
+.day-sec h3 { font-size: var(--fs-lg); margin-bottom: var(--space-1); }
+@media (max-width: 767px) {
+  dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; }
+  body:has(dialog[open]) { overflow: hidden; }
+}
+@media (min-width: 1024px) {
+  /* Day detail opens as a side panel, so the week stays visible. */
+  dialog.day-panel { margin: 0 0 0 auto; width: 430px; height: 100dvh; max-height: 100dvh; border-radius: var(--r-hero) 0 0 var(--r-hero); }
+}
+/* Exercise plan (the ⤢ button): truly full screen on every size; the content stays a readable width in the middle. */
+dialog.plan-view { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; }
+dialog.plan-view .modal-head, dialog.plan-view #detail-body { width: 100%; max-width: 760px; margin-inline: auto; }
+body:has(dialog.plan-view[open]) { overflow: hidden; }
+
+/* ---------- misc */
+.skip { position: fixed; top: -100px; left: var(--space-2); }
+.skip:focus { top: var(--space-1); z-index: 30; background: var(--surface); padding: var(--space-2) var(--space-3); border-radius: var(--r-control); }
