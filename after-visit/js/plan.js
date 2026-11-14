@@ -44,3 +44,37 @@ export function planExercise(item) {
 }
 
 export const planExercises = (plan = DEMO_PLAN) => plan.exercises.map(planExercise);
+
+/**
+ * planExercises() plus the extra fields a visit-server plan carries that planExercise() doesn't
+ * (sets, times a day, hold/rest overrides, form checks, prescribed-as text). Used wherever a plan
+ * fetched from the During Visit server (shape: pt_plan_from_visit) needs to drive a session, so the
+ * dashboard and the session page stay in sync about what the therapist actually prescribed.
+ */
+export function planExercisesFromVisit(plan) {
+  const extras = Object.fromEntries((plan.exercises || []).map((x) => [x.id, x]));
+  return planExercises(plan).map((e) => {
+    const x = extras[e.id] || {};
+    return {
+      ...e,
+      sets: x.sets ?? 1,
+      perDay: x.perDay ?? null,
+      holdMs: x.holdMs ?? e.holdMs,
+      note: x.note || e.note,
+      checks: e.checks,
+      prescribedAs: x.prescribedAs || '',
+    };
+  });
+}
+
+/**
+ * Narrow a resolved exercise list to just the ids in a comma-separated string (e.g. from the
+ * session page's ?exercises=id,id link). No selection, or one that matches nothing in the list,
+ * returns the whole list unchanged rather than an empty session.
+ */
+export function selectExercises(exs, idsParam) {
+  if (!idsParam) return exs;
+  const ids = new Set(String(idsParam).split(',').map((s) => s.trim()).filter(Boolean));
+  const filtered = exs.filter((e) => ids.has(e.id));
+  return filtered.length ? filtered : exs;
+}

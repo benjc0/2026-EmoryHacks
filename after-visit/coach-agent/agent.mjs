@@ -119,9 +119,29 @@ const agent = defineAgent({
     };
 
     // ---- Body tracking on the caller's video, fed into the session.
+    // The Python pose helper can die mid-call (crash, OOM...). onExit restarts it a couple of times and, if
+    // it keeps dying, tells the patient so the session keeps going without silently losing rep counting.
     let pose = null;
-    if (process.env.COACH_POSE !== 'off') startPose().then((p) => { pose = p; console.log('[pose] tracking ready'); },
-      (error) => console.error(`[pose] not available: ${error.message}`));
+    let poseRestarts = 0;
+    const MAX_POSE_RESTARTS = 2;
+    const launchPose = () => {
+      if (process.env.COACH_POSE === 'off') return;
+      startPose({
+        onExit: () => {
+          pose = null;
+          if (poseRestarts < MAX_POSE_RESTARTS) {
+            poseRestarts++;
+            console.error(`[pose] helper died, restarting (attempt ${poseRestarts}/${MAX_POSE_RESTARTS})`);
+            launchPose();
+          } else {
+            console.error('[pose] helper keeps dying, giving up on rep tracking for this call');
+            say("I've lost my camera tracking, so I can't count your reps right now. Keep going at your own pace — tell me how many you've done and I'll keep track.");
+          }
+        },
+      }).then((p) => { pose = p; console.log('[pose] tracking ready'); },
+        (error) => console.error(`[pose] not available: ${error.message}`));
+    };
+    launchPose();
     let lastPhase = '';
     const stopVideo = watchCallerVideo(ctx.room, caller.identity, {
       fps: 10,

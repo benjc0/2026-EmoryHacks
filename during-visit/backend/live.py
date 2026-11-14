@@ -30,6 +30,7 @@ Emit = Callable[[dict], Awaitable[None]]
 
 DROP_UNTRANSLATED_AFTER = 6.0   # seconds of input with no translation -> other lane's speech
 FINALIZE_AFTER_SILENCE = 2.5    # close a caption bubble if nothing new arrives
+RECONNECT_BACKOFF_MAX = 30.0    # cap for the reconnect backoff below
 
 
 class Lane:
@@ -105,12 +106,14 @@ class Lane:
 
     async def run(self):
         """Keep a session open for the whole visit; reconnect if it drops."""
+        backoff = 1.0
         while not self.interp.closed:
             try:
                 async with client().aio.live.connect(
                     model=config.LIVE_TRANSLATE_MODEL, config=self.live_config()
                 ) as session:
                     log.info("lane %s connected (-> %s)", self.speaker, self.target_lang)
+                    backoff = 1.0     # a successful connection resets the backoff
                     sender = asyncio.create_task(self._send_loop(session))
                     try:
                         await self._recv_loop(session)
@@ -122,7 +125,8 @@ class Lane:
                 log.warning("lane %s error: %s", self.speaker, e)
                 await self.interp.emit({"type": "status", "level": "warn",
                                         "text": f"Interpreter reconnecting ({self.speaker})…"})
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, RECONNECT_BACKOFF_MAX)
 
     async def _send_loop(self, session):
         while True:

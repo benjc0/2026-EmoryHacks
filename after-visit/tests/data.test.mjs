@@ -2,7 +2,7 @@
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEMO_PLAN, planExercises, planExercise } from '../js/plan.js';
+import { DEMO_PLAN, planExercises, planExercise, planExercisesFromVisit, selectExercises } from '../js/plan.js';
 import { SessionLog, FRAME_INTERVAL_MS, flaggedReps, needsAttention, progressVsPrevious } from '../js/sessionLog.js';
 import { createStore } from '../js/store.js';
 import { RepCounter } from '../js/repCounter.js';
@@ -55,6 +55,43 @@ test('plan values override the exercise library', () => {
   const [arm, squat] = planExercises();
   assert.equal(arm.mode, 'precise');
   assert.equal(squat.mode, 'simple');
+});
+
+test('planExercisesFromVisit merges the therapist-prescribed extras onto the library exercise', () => {
+  const visitPlan = {
+    id: 'plan-visit-1', therapist: 'Dr. Kim', createdAt: '2026-11-10',
+    exercises: [
+      { id: 'shoulder-abduction', mode: 'precise', target: 130, reps: 8, sets: 2, perDay: 2,
+        holdMs: 1500, note: 'Stop if it hurts.', checks: [{ id: 'extra', type: 'trunkLean', max: 10 }],
+        prescribedAs: '2 sets of 8 reps' },
+    ],
+  };
+  const [arm] = planExercisesFromVisit(visitPlan);
+  assert.equal(arm.target, 130);
+  assert.equal(arm.reps, 8);
+  assert.equal(arm.sets, 2);
+  assert.equal(arm.perDay, 2);
+  assert.equal(arm.holdMs, 1500);
+  assert.equal(arm.note, 'Stop if it hurts.');
+  assert.equal(arm.prescribedAs, '2 sets of 8 reps');
+  assert.ok(arm.checks.some((c) => c.id === 'extra'));
+
+  // an exercise not mentioned in the plan still gets safe defaults, not undefined/NaN
+  const bare = { id: 'plan-2', therapist: 'Dr. Kim', createdAt: '2026-11-10',
+    exercises: [{ id: 'mini-squat' }] };
+  const [squat] = planExercisesFromVisit(bare);
+  assert.equal(squat.sets, 1);
+  assert.equal(squat.perDay, null);
+});
+
+test('selectExercises narrows by id and falls back to the full plan when the selection is empty or unknown', () => {
+  const [arm, squat] = planExercises();
+  assert.deepEqual(selectExercises([arm, squat], null).map((e) => e.id), ['shoulder-abduction', 'mini-squat']);
+  assert.deepEqual(selectExercises([arm, squat], 'mini-squat').map((e) => e.id), ['mini-squat']);
+  assert.deepEqual(selectExercises([arm, squat], 'mini-squat, shoulder-abduction').map((e) => e.id),
+    ['shoulder-abduction', 'mini-squat']);
+  // an id that doesn't match anything in the plan: don't return an empty session
+  assert.deepEqual(selectExercises([arm, squat], 'not-a-real-id').map((e) => e.id), ['shoulder-abduction', 'mini-squat']);
 });
 
 test('frames are throttled to ~15 fps and keep broken form rules', () => {

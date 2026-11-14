@@ -289,6 +289,14 @@ def _sessions_dir(patient_id: str) -> Path:
     return Path(config.DATA_DIR) / "pt_sessions" / safe
 
 
+def _write_pt_session(pid: str, sid: str, body: dict) -> None:
+    d = _sessions_dir(pid)
+    d.mkdir(parents=True, exist_ok=True)
+    body["_received_at"] = time.time()
+    (d / f"{int(time.time())}-{re.sub(r'[^A-Za-z0-9_-]', '_', sid)[:40]}.json").write_text(
+        json.dumps(body, ensure_ascii=False), encoding="utf-8")
+
+
 @router.post("/api/pt/sessions")
 async def receive_pt_session(request: Request, patient_id: str | None = None):
     """Accepts either the PT app's results JSON (app.js) or a SessionLog export (sessionLog.js/store.js)."""
@@ -302,11 +310,7 @@ async def receive_pt_session(request: Request, patient_id: str | None = None):
     if not pid:
         raise HTTPException(400, "patient_id is required (query parameter or in the body)")
     sid = str(body.get("id") or uuid.uuid4().hex[:12])
-    d = _sessions_dir(pid)
-    d.mkdir(parents=True, exist_ok=True)
-    body["_received_at"] = time.time()
-    (d / f"{int(time.time())}-{re.sub(r'[^A-Za-z0-9_-]', '_', sid)[:40]}.json").write_text(
-        json.dumps(body, ensure_ascii=False), encoding="utf-8")
+    await asyncio.to_thread(_write_pt_session, pid, sid, body)
     log.info("PT session for %s saved (%s)", pid, sid)
     return {"ok": True, "id": sid}
 

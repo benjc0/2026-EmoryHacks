@@ -367,7 +367,6 @@ async function finishSession() {
     saved.classList.add('err');
     saved.textContent = "Couldn't save this session. There may not be enough space on this phone.";
   }
-  window.__lastSession = summary;     // handy for checking in DevTools
   // Save the result to the same patient record used by the dashboard.
   if (PLAN.source === 'during-visit' || connection.server) {
     try {

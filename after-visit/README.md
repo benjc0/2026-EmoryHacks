@@ -2,7 +2,7 @@
 
 **The real session page is `session.html`** (open http://localhost:8000/session.html). It runs the therapist's plan: side arm raise (precise mode, shows degrees), then mini squat (simple mode, no numbers). Each exercise records on its own, reps are scored and spoken, and the whole session is saved on the device for the therapist.
 
-`index.html` is still the older one-exercise prototype described below. It becomes the patient dashboard in a later step.
+`index.html` is the patient dashboard (see below) — the home screen a patient lands on before starting a session.
 
 **Or do it on a FaceTime call.** Patients can pick the second path: an AI coach that calls them on FaceTime (through Chert), talks them through the same plan, watches the camera, counts and scores reps out loud with the same tracker, and saves the session in the same format. See [coach-agent/README.md](coach-agent/README.md). `coach-test.html` is its test page: "Have my coach call my iPhone", or talk to the coach in the browser.
 
@@ -13,21 +13,21 @@
 3. **Between exercises:** how each rep went (Good / Fair / Poor, with icons and words, not color alone) and what's next.
 4. **Done:** a summary, then everything is saved on the phone: reps, scores, ~15 tracked frames a second, and one video per exercise.
 
-## Prototype (`index.html`)
+## Patient dashboard (`index.html`)
 
-Pick an exercise, prop your phone or laptop camera up, and press **Start session**:
+`index.html` is the patient's home screen (greeting, this week, today's exercises, next visit, medicines,
+questions for the doctor). It's rendered by `dashboard.js`/`dashboard.css`/`js/dashboardData.js`, following
+`design-system/ai-clinic-assistant/pages/patient-dashboard.md`. When a Visit Copilot (`../during-visit`)
+server answers, it loads the therapist's actual plan, medicines, appointments and questions from there;
+otherwise it falls back to a sample plan so the page still works standalone. From here, "Start" opens
+`session.html` for the chosen exercise(s) (or lets the patient use the FaceTime coach instead, see below).
 
-1. **Setup:** the screen says how to stand ("Face the camera" / "Sit side-on") and checks that you're in the frame.
-2. **Recording starts automatically** after you've been in frame for 1.5 seconds, with a 3-2-1 countdown (or tap **Start now**).
-3. **Live tracking:** MediaPipe Pose tracks 33 body points in the browser and draws your skeleton. The measured joint is highlighted with its angle, plus a bar showing how close you are to the target.
-4. **Every rep is scored** good / fair / poor on range (did you reach the target angle?), hold time (for hold exercises), speed, and form (e.g. elbow straight, no leaning). Feedback is spoken: "2. Good rep." / "3. Raise your arm a little higher."
-5. **When you finish:** a pain check (0–10 plus a note, typed or dictated), your rep table, and a **replay of the video with the skeleton redrawn from the saved tracking data**, next to an angle-over-time chart. Tap a rep or the chart to jump the video. Download the video and the tracking data (JSON).
+### Older one-exercise prototype (`app.js`, `style.css`)
 
-Exercises: **side arm raise** (target 140°), **overhead reach and hold** (160°, hold 3 s), **seated knee extension** (165°, hold 2 s), **mini squat** (110°). You can change the target angle and reps before starting.
-
-**Side = Auto:** both sides are tracked, and the app locks onto whichever side completes the first rep.
-
-No backend, no install, nothing leaves the device unless you download it.
+`app.js` and `style.css` are an earlier, self-contained single-exercise flow (setup, live tracking, rep
+scoring, replay/export) that predates the dashboard above. No page currently loads them (`index.html` now
+loads `dashboard.js`/`dashboard.css` instead). They're kept in the repo as a reference rather than deleted,
+but treat them as unmaintained unless something is wired back up to them.
 
 ## Run it
 
@@ -71,7 +71,10 @@ Then open the printed `https://….trycloudflare.com` link in Safari.
 |---|---|
 | `session.html`, `session.css`, `session.js` | the real session: plan → each exercise → between → done (saved) |
 | `js/exerciseTracker.js` | runs one exercise: landmarks in, angle + rep events + logged frames out; auto-picks the moving side |
-| `index.html`, `style.css`, `app.js` | the older one-exercise prototype: pick → live session → results |
+| `index.html` | the patient dashboard: greeting, this week, today's exercises, next visit, medicines, questions |
+| `dashboard.js`, `dashboard.css`, `js/dashboardData.js` | render the dashboard above; `dashboardData.js` loads the Visit Copilot plan or falls back to a sample one |
+| `js/checkin.js` | the dashboard's pain/notes check-in |
+| `style.css`, `app.js` | the older one-exercise prototype (pick → live session → results); no page currently loads them, kept as reference only |
 | `js/exercises.js` | exercise definitions: which 3 body points form the angle, start zone, target, hold time, form rules. Add exercises here |
 | `js/repCounter.js` | turns the angle stream into reps and scores each one |
 | `js/analysis.js`, `js/geometry.js` | joint angles, body lean, side visibility |
