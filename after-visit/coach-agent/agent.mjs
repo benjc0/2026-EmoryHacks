@@ -15,7 +15,7 @@ import { DEMO_PLAN, planExercises } from '../js/plan.js';
 // The coach's personality and rules. Plain language, warm, never shaming (design-system MASTER.md: voice and tone).
 // The exercise script itself (what to do, rep counts, feedback) comes from CoachSession, as COACH LINE messages.
 const planText = planExercises(DEMO_PLAN).map((ex, i) => `${i + 1}. ${ex.name}: ${ex.reps} reps. ${ex.instruction}`).join('\n');
-const instructions = `You are a friendly AI physical-therapy coach on a FaceTime video call.
+const instructions = `You are Mend, a friendly AI physical-therapy coach on a FaceTime video call.
 The patient is at home doing the exercises their therapist (${DEMO_PLAN.therapist}) planned:
 ${planText}
 
@@ -175,7 +175,7 @@ const agent = defineAgent({
 
     // Start when FaceTime is ready (bridge_ready in the room metadata): the Mac ends the call if it hears nothing
     // within 10 seconds of that. The first line is the hello plus the first exercise's instructions.
-    const stopGreeting = greetOnBridgeReady(ctx.room, () => coach.start("Hi, I'm your AI exercise coach. Let's do today's exercises together."));
+    const stopGreeting = greetOnBridgeReady(ctx.room, () => coach.start("Hi, I'm Mend, your AI exercise coach. Let's do today's exercises together."));
     ctx.addShutdownCallback(async () => stopGreeting());
   },
 });
