@@ -68,3 +68,16 @@ Each session is saved on the device in three parts, so the session list stays fa
 ## Next steps (from the plan)
 
 Dashboard with the 3 cards, saving sessions to the backend, the therapist review page, and progress across weeks.
+
+
+## Patient dashboard
+
+Open `http://localhost:8000` after serving this folder. `index.html` is now the dashboard; the original camera app is retained at `session.html`.
+
+The dashboard follows `design-system/ai-clinic-assistant/pages/patient-dashboard.md` and the shared design tokens. It includes responsive cards, a navigable week, day detail, an exercise-plan dialog, light/dark mode, local questions with optional voice input, and a multi-exercise session queue.
+
+The patient name and care plan are samples from the design brief and `js/plan.js`. No appointments or medicines are invented. Counts start at zero and reflect completed prescribed reps, saved with the pain-check button. The completion marker is not a clinical quality assessment. Questions and completion summaries are stored in this browser's localStorage. Full video/tracking data and pain notes still require download from the original results screen. Nothing syncs to the clinic.
+
+Start session runs the remaining prescribed exercises, one at a time. After saving a pain check, choose Next exercise and start the next camera setup. The plan uses the existing five-rep prescriptions; no unprescribed sets, rest intervals, or demo completion records are added. Demo imagery is a position illustration, not a motion video.
+
+New files: `dashboard.js`, `dashboard.css`, `js/dashboardData.js`, and `tests/dashboard.test.mjs`.
