@@ -1,0 +1,234 @@
+{
+  "id": "0f5f1fc04693",
+  "patient_id": "demo-patient",
+  "provider": "",
+  "specialty": "",
+  "doctor_lang": "en",
+  "patient_lang": "en",
+  "started_at": 1794691032.7225194,
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Can I still have a glass of wine with dinner?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    },
+    {
+      "id": "q2",
+      "text": "Do I need to stop taking ibuprofen?",
+      "text_doctor_lang": null,
+      "status": "answered",
+      "evidence": "Please stop taking ibuprofen or Advil."
+    },
+    {
+      "id": "q3",
+      "text": "Is it safe for me to drive?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    },
+    {
+      "id": "q4",
+      "text": "Will the new medicine make me dizzy?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    }
+  ],
+  "notes": {
+    "diagnoses": [
+      {
+        "name": "atrial fibrillation",
+        "explanation_patient_lang": "This is an irregular heartbeat that can increase your risk of having a stroke."
+      },
+      {
+        "name": "high blood pressure",
+        "explanation_patient_lang": "Your blood pressure was measured at 152/94 today, which is higher than it should be."
+      }
+    ],
+    "medications": [
+      {
+        "name": "apixaban",
+        "generic_name": null,
+        "dose": "5 mg",
+        "frequency": "twice a day, morning and evening",
+        "purpose": "blood thinner",
+        "instructions": "Don't skip doses.",
+        "change": "new",
+        "explanation_patient_lang": "This is a new blood thinner to help prevent strokes. It is important to take it every morning and evening."
+      },
+      {
+        "name": "lisinopril",
+        "generic_name": null,
+        "dose": "20 mg",
+        "frequency": "once a day",
+        "purpose": "blood pressure",
+        "instructions": null,
+        "change": "changed",
+        "explanation_patient_lang": "We are increasing your dose from 10 mg to 20 mg to help lower your blood pressure."
+      },
+      {
+        "name": "ibuprofen",
+        "generic_name": null,
+        "dose": null,
+        "frequency": null,
+        "purpose": "pain",
+        "instructions": "Stop taking this medication.",
+        "change": "stopped",
+        "explanation_patient_lang": "You must stop taking ibuprofen or Advil because it increases your risk of bleeding while on a blood thinner."
+      },
+      {
+        "name": "Advil",
+        "generic_name": "ibuprofen",
+        "dose": null,
+        "frequency": null,
+        "purpose": "pain",
+        "instructions": "Stop taking this medication.",
+        "change": "stopped",
+        "explanation_patient_lang": "Please stop taking Advil to avoid a higher risk of bleeding."
+      },
+      {
+        "name": "Tylenol",
+        "generic_name": "acetaminophen",
+        "dose": null,
+        "frequency": null,
+        "purpose": "pain",
+        "instructions": "Use this instead of ibuprofen.",
+        "change": "new",
+        "explanation_patient_lang": "You can use Tylenol for pain relief instead of ibuprofen."
+      }
+    ],
+    "exercises": [
+      {
+        "name": "walking",
+        "body_part": "whole body",
+        "sets": null,
+        "reps": "30 minutes",
+        "frequency": "5 days a week",
+        "form_cues": [
+          "pace where you can still talk"
+        ],
+        "explanation_patient_lang": "Try to walk for 30 minutes five days a week at a pace that allows you to keep a conversation."
+      }
+    ],
+    "care_items": [
+      {
+        "type": "instruction",
+        "text": "check your blood pressure at home every morning and write it down",
+        "text_patient_lang": "Please measure your blood pressure every morning and keep a log of the results.",
+        "due": "every morning"
+      },
+      {
+        "type": "test",
+        "text": "blood test to check your kidneys",
+        "text_patient_lang": "You need a blood test to make sure your kidneys are handling the new medication dose well.",
+        "due": "in one week"
+      },
+      {
+        "type": "follow_up",
+        "text": "see you back here in three months",
+        "text_patient_lang": "We will meet again in three months to check on your progress.",
+        "due": "in three months"
+      },
+      {
+        "type": "warning_sign",
+        "text": "black stools, blood in your urine, or bruising that won't stop",
+        "text_patient_lang": "Call the office immediately if you see signs of internal bleeding like dark stools, bloody urine, or unusual bruising.",
+        "due": null
+      },
+      {
+        "type": "warning_sign",
+        "text": "face drooping, arm weakness, or trouble speaking",
+        "text_patient_lang": "Call 911 immediately if you have signs of a stroke, such as your face drooping, arm weakness, or difficulty talking.",
+        "due": null
+      }
+    ],
+    "wrapping_up": true
+  },
+  "utterances": [
+    {
+      "id": "fc6c2c08ed",
+      "speaker": "doctor",
+      "original": "Good morning, Mr. Johnson. I'm Dr. Patel. How have you been feeling since your last visit?",
+      "translated": "Good morning, Mr. Johnson. I'm Dr. Patel. How have you been feeling since your last visit?",
+      "t": 1.0160486698150635
+    },
+    {
+      "id": "d47ccc5428",
+      "speaker": "patient",
+      "original": "Mostly okay. But my heart sometimes flutters, and I get tired walking up the stairs.",
+      "translated": "Mostly okay. But my heart sometimes flutters, and I get tired walking up the stairs.",
+      "t": 4.035173654556274
+    },
+    {
+      "id": "7218a2072d",
+      "speaker": "doctor",
+      "original": "Your monitor results came back. The fluttering is atrial fibrillation. It's an irregular heartbeat, and it raises the risk of stroke.",
+      "translated": "Your monitor results came back. The fluttering is atrial fibrillation. It's an irregular heartbeat, and it raises the risk of stroke.",
+      "t": 7.552969455718994
+    },
+    {
+      "id": "508d337134",
+      "speaker": "patient",
+      "original": "A stroke? That sounds serious.",
+      "translated": "A stroke? That sounds serious.",
+      "t": 11.556691408157349
+    },
+    {
+      "id": "ce43654f43",
+      "speaker": "doctor",
+      "original": "It's very manageable. I'm starting you on apixaban, a blood thinner. Five milligrams, twice a day, morning and evening. Don't skip doses.",
+      "translated": "It's very manageable. I'm starting you on apixaban, a blood thinner. Five milligrams, twice a day, morning and evening. Don't skip doses.",
+      "t": 15.062847137451172
+    },
+    {
+      "id": "b42f456296",
+      "speaker": "doctor",
+      "original": "Your blood pressure is also high today, 152 over 94. I'm increasing your lisinopril from 10 milligrams to 20 milligrams, once a day.",
+      "translated": "Your blood pressure is also high today, 152 over 94. I'm increasing your lisinopril from 10 milligrams to 20 milligrams, once a day.",
+      "t": 19.046252250671387
+    },
+    {
+      "id": "51332008fc",
+      "speaker": "doctor",
+      "original": "Please stop taking ibuprofen or Advil. With the blood thinner, it raises your bleeding risk. Use Tylenol for pain instead.",
+      "translated": "Please stop taking ibuprofen or Advil. With the blood thinner, it raises your bleeding risk. Use Tylenol for pain instead.",
+      "t": 23.070855140686035
+    },
+    {
+      "id": "2cbcf46ccc",
+      "speaker": "doctor",
+      "original": "I'd like you to walk thirty minutes a day, five days a week, at a pace where you can still talk. And check your blood pressure at home every morning and write it down.",
+      "translated": "I'd like you to walk thirty minutes a day, five days a week, at a pace where you can still talk. And check your blood pressure at home every morning and write it down.",
+      "t": 27.043641567230225
+    },
+    {
+      "id": "8f6976e064",
+      "speaker": "doctor",
+      "original": "We'll do a blood test in one week to check your kidneys after the dose change, and I'll see you back here in three months.",
+      "translated": "We'll do a blood test in one week to check your kidneys after the dose change, and I'll see you back here in three months.",
+      "t": 31.055726051330566
+    },
+    {
+      "id": "ebe22a692f",
+      "speaker": "doctor",
+      "original": "Call us right away if you notice black stools, blood in your urine, or bruising that won't stop. And call 911 if you have face drooping, arm weakness, or trouble speaking.",
+      "translated": "Call us right away if you notice black stools, blood in your urine, or bruising that won't stop. And call 911 if you have face drooping, arm weakness, or trouble speaking.",
+      "t": 34.55845618247986
+    },
+    {
+      "id": "e6ad59c643",
+      "speaker": "doctor",
+      "original": "Alright, I think that's everything for today. Do you have any other questions before you go?",
+      "translated": "Alright, I think that's everything for today. Do you have any other questions before you go?",
+      "t": 37.559231996536255
+    }
+  ],
+  "summary": null,
+  "summary_pending": true,
+  "pt_app_url": "/pt/",
+  "summary_failed": true,
+  "ended": true,
+  "saved_at": 1794691094.6157188
+}
