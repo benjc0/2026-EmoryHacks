@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Design system preview: AI Clinic Assistant</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Inter:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;500;600&family=Roboto:wght@300;400;500&display=swap" />
+  <style>
+    .top { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; }
+    .top p { max-width: 60ch; }
+    .pickers { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+    .seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--hairline); flex-wrap: wrap; }
+    .seg label { position: relative; }
+    .seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .seg span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: var(--r-pill); font-size: var(--fs-sm); color: var(--muted); }
+    .seg input:checked + span { background: var(--fg); color: var(--bg); }
+    .seg input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .block-title { font-size: var(--fs-title); margin-bottom: var(--space-3); }
+
+    .palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-3); }
+    .sw__c { height: 88px; border-radius: var(--r-tile); display: flex; align-items: flex-end; padding: var(--space-2); font-size: var(--fs-sm); }
+    .sw__t { margin-top: 6px; font-size: var(--fs-sm); }
+    .sw__t span { display: block; color: var(--muted); font-size: 14px; }
+    .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-5); align-items: start; }
+    .type-sample > * + * { margin-top: var(--space-2); }
+
+    /* ---- dashboard mock */
+    .frames { display: grid; grid-template-columns: 420px 1fr; gap: var(--space-5); align-items: start; }
+    .frames > div { min-width: 0; }
+    @media (max-width: 1100px) { .frames { grid-template-columns: 1fr; } .dash--pc { min-width: 780px; } }
+    .frame { background: var(--bg); border: 1px solid var(--hairline); border-radius: 36px; padding: var(--space-3) var(--space-3) var(--space-4); position: relative; box-shadow: 0 1px 0 var(--hairline); }
+    .frame--phone { max-width: 420px; overflow: hidden; }
+    .frame--pc { border-radius: var(--r-hero); overflow-x: auto; }
+    .frame__label { font-size: var(--fs-sm); color: var(--muted); margin-bottom: var(--space-2); }
+    .dash { display: grid; gap: var(--space-3); }
+    .greet h3 { font-size: 26px; font-weight: var(--w-medium); letter-spacing: -0.02em; }
+    .greet p { color: var(--muted); font-size: var(--fs-sm); margin-top: 2px; }
+    .greet--pc { display: flex; justify-content: space-between; align-items: center; }
+
+    .ex-hero .section-head h3 { font-size: var(--fs-title); }
+    .ex-count { display: flex; align-items: baseline; gap: var(--space-1); margin: var(--space-2) 0 var(--space-3); }
+    .ex-count small { color: var(--muted-on-tile); font-size: var(--fs-body); }
+    .ex-list { list-style: none; margin: 0 0 var(--space-4); padding: 0; }
+    .ex-list li { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-top: 1px solid var(--hairline); }
+    .ex-list li:first-child { border-top: 0; }
+    .ex-list small { display: block; color: var(--muted-on-tile); font-size: var(--fs-sm); }
+    .ex-list .done { color: var(--muted-on-tile); }
+    .tick { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--good); flex: none; }
+    .ring { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border); flex: none; }
+    .note { font-size: var(--fs-sm); color: var(--muted-on-tile); margin-bottom: var(--space-3); }
+    .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
+    .mini__k { font-size: var(--fs-sm); color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .mini__v { margin-top: 6px; font-size: var(--fs-body); }
+    .mini__v small { display: block; color: var(--muted); font-size: var(--fs-sm); }
+    .qlist { list-style: none; margin: 0; padding: 0; }
+    .qlist li { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-2) 0; border-top: 1px solid var(--hairline); }
+    .qlist input { width: 22px; height: 22px; margin-top: 3px; accent-color: var(--primary-ink); flex: none; }
+    .qlist small { display: block; color: var(--muted); font-size: var(--fs-sm); }
+    .addq { display: flex; gap: var(--space-1); margin-top: var(--space-2); }
+    .addq .input { border-radius: var(--r-pill); }
+    .fab { position: absolute; right: var(--space-4); bottom: var(--space-4); width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--fg); color: var(--bg); display: grid; place-items: center; cursor: pointer; }
+    .dash--pc { grid-template-columns: 1.5fr 1fr; grid-template-areas: "greet greet" "week week" "ex side"; gap: var(--space-3); align-items: stretch; }
+    .dash--pc .greet--pc { grid-area: greet; } .dash--pc .week-wrap { grid-area: week; } .dash--pc .ex-hero { grid-area: ex; } .dash--pc .side { grid-area: side; display: grid; gap: var(--space-3); grid-template-rows: auto auto 1fr; }
+
+    /* ---- exercise plan (full screen) */
+    .plan { max-width: 440px; border-radius: 36px; overflow: hidden; border: 1px solid var(--hairline); background: var(--bg); }
+    .plan__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); padding: var(--space-4) var(--space-4) var(--space-3); }
+    .plan__top p { color: var(--muted); font-size: var(--fs-sm); margin-top: 4px; }
+    .plan__body { padding: 0 var(--space-4) var(--space-4); display: grid; gap: var(--space-4); }
+    .safety { display: flex; gap: var(--space-1); align-items: flex-start; color: var(--fair); background: var(--fair-bg); padding: var(--space-2) var(--space-3); border-radius: var(--r-tile); font-size: var(--fs-sm); }
+    .done-row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--hairline); }
+    .demo { aspect-ratio: 16/10; border-radius: var(--r-tile); background: var(--tile); display: grid; place-items: center; position: relative; color: var(--muted-on-tile); }
+    .demo > svg { width: 72px; height: 72px; stroke-width: 1.25; }
+    .demo .btn { position: absolute; left: var(--space-2); bottom: var(--space-2); min-height: 44px; background: var(--surface); color: var(--fg); font-size: var(--fs-sm); }
+    .facts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1); }
+    .facts > div { background: var(--chip); border-radius: var(--r-control); padding: var(--space-2) var(--space-3); }
+    .facts dt { color: var(--muted); font-size: var(--fs-sm); }
+    .facts dd { margin: 2px 0 0; font-size: var(--fs-lg); }
+    .plan h4 { margin-bottom: 6px; }
+    .plan ol { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+    .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .checks li { display: flex; gap: var(--space-1); align-items: flex-start; }
+    .checks .icon { color: var(--good); margin-top: 3px; }
+    .quote { margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--primary-ink); }
+    .quote small { display: block; color: var(--muted); font-size: var(--fs-sm); margin-top: 4px; }
+    .plan__foot { padding: var(--space-3) var(--space-4) var(--space-4); border-top: 1px solid var(--hairline); background: var(--bg); }
+
+    /* ---- HUD + chart */
+    .hud { background: #000; color: #fff; border-radius: var(--r-hero); overflow: hidden; }
+    .hud__stage { height: 140px; display: grid; place-items: center; color: #7f97a6; font-size: var(--fs-sm); }
+    .hud__bar { background: #0b1620; padding: var(--space-4); display: grid; gap: var(--space-3); }
+    .hud__m { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; }
+    .hud__m small { display: block; color: #C5CFD6; font-size: 15px; }
+    .hud__m b { font-size: 40px; font-weight: var(--w-light); letter-spacing: -0.02em; }
+    .hud .progress { background: #23384a; } .hud .progress__fill { background: #A6C8E2; width: 82%; } .hud .progress__target { background: #fff; left: 88%; }
+    .coach { text-align: center; font-size: 24px; color: #FFB4A2; }
+    svg.chart text { font-family: var(--font); }
+
+    .celebrate { max-width: 440px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 36px; padding: var(--space-4); display: grid; gap: var(--space-3); }
+    .confetti { width: 100%; height: auto; }
+    .confetti > * { transform-box: fill-box; transform-origin: center; animation: drop .8s cubic-bezier(.2,.8,.3,1) both; }
+    .confetti > *:nth-child(even) { animation-delay: .12s; }
+    @keyframes drop { from { transform: translateY(-24px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+    .pain { border: 0; padding: 0; margin: 0; }
+    .pain legend { font-weight: var(--w-medium); margin-bottom: var(--space-2); }
+    .painrow { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; }
+    .painpill { position: relative; }
+    .painpill input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .painpill span { display: grid; place-items: center; min-height: 44px; border-radius: 12px; background: var(--bg); font-variant-numeric: tabular-nums; }
+    .painpill input:checked + span { background: var(--fg); color: var(--bg); }
+    .painpill input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .painends { display: flex; justify-content: space-between; color: var(--muted); font-size: var(--fs-sm); margin-top: 4px; }
+
+    /* ---- merged: fuller, card-based layout (from v1) */
+    .tile { padding: var(--space-3) var(--space-4); }
+    .cal-card { padding: var(--space-3) var(--space-3) var(--space-2); }
+    .cal-card .week-head { margin-bottom: var(--space-2); }
+    .dash--pc .cal-card .week-head { margin-bottom: var(--space-1); }
+    .dash--pc .hero-tile { display: flex; flex-direction: column; }
+    .dash--pc .hero-tile .hero-foot { margin-top: auto; }
+    .dash--pc .side .tile:last-child { display: flex; flex-direction: column; }
+    .dash--pc .side .tile:last-child .addq { margin-top: auto; padding-top: var(--space-2); }
+    .ex-list { margin-bottom: var(--space-3); }
+    .stones { margin: var(--space-1) 0 0; }
+    .plan__body { gap: var(--space-3); }
+    .cal-card .week .day__dot { background: var(--surface); border-color: var(--hairline); }
+    .cal-card .week .day--done .day__dot { background: var(--primary-soft); border-color: transparent; }
+    .cal-card .week .day--today .day__dot { border-color: var(--accent-ink); }
+    /* ---- fun layer */
+    .greet--fun { position: relative; isolation: isolate; }
+    .greet--fun .blobs { position: absolute; right: -28px; top: -34px; width: 118px; z-index: -1; }
+    .greet--pc .greet--fun .blobs { right: auto; left: 300px; }
+    .week-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
+    .week-track { position: relative; }
+    .week-track::before, .week-fill { content: ""; position: absolute; top: calc(4px + 1.55em + 6px + 22px - 2px); height: 4px; border-radius: 2px; }
+    .week-track::before { left: calc(100%/14); right: calc(100%/14); background: var(--hairline); }
+    .week-fill { background: var(--primary); }
+    .week .day__dot { position: relative; background: var(--bg); }
+    .week .day--done .day__dot { background: var(--primary-soft); }
+    .hero-h { font-size: 30px; font-weight: var(--w-medium); letter-spacing: -0.02em; }
+    .hero-sub { color: var(--muted-on-tile); margin-top: 2px; }
+    .stones { width: 100%; max-width: 360px; height: auto; display: block; margin: var(--space-2) 0 var(--space-1); }
+    .stones text { font-family: var(--font); }
+    .stone { transform-box: fill-box; transform-origin: center; animation: hop .5s cubic-bezier(.3,1.6,.5,1) both; }
+    .s2 { animation-delay: .25s; } .s3 { animation-delay: .5s; }
+    @keyframes hop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .ex-list li { gap: var(--space-2); }
+    .ex-list .grow { flex: 1; }
+    .btn--icon-surface { background: var(--surface); border-color: transparent; }
+    .hero-foot { display: flex; flex-direction: column; gap: var(--space-3); }
+    .dash--pc .hero-foot { flex-direction: row; justify-content: space-between; align-items: center; }
+    .hero-foot .btn { flex: none; }
+    .hero-foot .note { margin: 0; }
+    .tile-head { display: flex; align-items: center; gap: var(--space-2); }
+    .tile .mini__k { margin: 0; }
+    .tile .mini__v { margin-top: 2px; }
+    .pair .tile { padding: var(--space-3); }
+    .pair .tile-head { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
+
+  </style>
+</head>
+<body>
+<main class="page page--wide">
+  <header class="top">
+    <div>
+      <h1 style="font-weight:var(--w-regular);letter-spacing:-0.025em">AI Clinic Assistant</h1>
+      <p class="muted" style="margin-top:6px">Design system for the at-home recovery app: calm, clear, and easy to read when you're tired or sore.</p>
+    </div>
+    <div class="pickers">
+      <fieldset class="seg" aria-label="Font" style="margin:0">
+        <label><input type="radio" name="font" value='"Inter"' checked /><span>Inter</span></label>
+        <label><input type="radio" name="font" value='"Lexend"' /><span>Lexend</span></label>
+        <label><input type="radio" name="font" value='"Atkinson Hyperlegible"' /><span>Atkinson</span></label>
+                <label><input type="radio" name="font" value='"Josefin Sans"' /><span>Josefin</span></label>
+        <label><input type="radio" name="font" value='"Roboto"' /><span>Roboto</span></label>
+      </fieldset>
+      <button class="btn btn--secondary" id="theme" aria-pressed="false"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span>Dark</span></button>
+    </div>
+  </header>
+
+  <section aria-labelledby="c-colors">
+    <h2 class="block-title" id="c-colors">Color</h2>
+    <div class="palette">
+      <div><div class="sw__c" style="background:#F4F0E2;color:#0F2B40;border:1px solid var(--hairline)">Aa</div><p class="sw__t">Cream<span>Page<br>#F4F0E2</span></p></div>
+      <div><div class="sw__c" style="background:#D3E4F1;color:#0F2B40">Aa</div><p class="sw__t">Pale blue<span>Exercises field<br>#D3E4F1</span></p></div>
+      <div><div class="sw__c" style="background:#A6C8E2;color:#0F2B40">Aa</div><p class="sw__t">Light blue<span>Done days<br>#A6C8E2</span></p></div>
+      <div><div class="sw__c" style="background:#619DC6;color:#0F2B40">Aa</div><p class="sw__t">Blue<span>Buttons, progress<br>#619DC6</span></p></div>
+      <div><div class="sw__c" style="background:#F4BAA3;color:#0F2B40">Aa</div><p class="sw__t">Peach<span>Start session<br>#F4BAA3</span></p></div>
+      <div><div class="sw__c" style="background:#0F2B40;color:#F4F0E2">Aa</div><p class="sw__t">Navy ink<span>Text<br>#0F2B40</span></p></div>
+    </div>
+  </section>
+
+  <div class="split">
+    <section class="type-sample" aria-labelledby="c-type">
+      <h2 class="block-title" id="c-type"><span id="font-name">Inter</span></h2>
+      <p class="fine" id="font-note">Clean, modern UI font; very readable at every size.</p>
+      <p class="display num">2 of 3</p>
+      <p style="font-size:var(--fs-page)">Good morning, Min-jun</p>
+      <p style="font-size:var(--fs-title);font-weight:var(--w-medium)">Today's exercises</p>
+      <p>Slow and controlled. Stop if pain goes above 4 out of 10.</p>
+      <p class="fine">For Sam Rivera, PT</p>
+      <p style="font-size:var(--fs-lg)">Il1 O0 rn m, 8 of 10 good</p>
+    </section>
+    <section class="stack" aria-labelledby="c-ctl">
+      <h2 class="block-title" id="c-ctl" style="margin:0">Controls</h2>
+      <button class="btn btn--accent btn--lg">Start session</button>
+      <div class="row">
+        <button class="btn btn--primary">Save</button><button class="btn btn--secondary">Not now</button>
+        <button class="btn btn--ghost">Skip</button><button class="btn btn--primary" disabled>Disabled</button>
+      </div>
+      <div class="row">
+        <span class="status status--good"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Good</span>
+        <span class="status status--fair"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/></svg>Fair</span>
+        <span class="status status--poor"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Poor</span>
+        <span class="chip">Dr. Lee</span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="pv-q">New question</label>
+        <span class="field__hint" id="pv-q-hint">Type it, or tap the microphone and say it</span>
+        <div class="addq" style="margin:0"><input class="input" id="pv-q" aria-describedby="pv-q-hint" value="My knee clicks when I go downstairs" />
+          <button class="btn btn--icon" aria-label="Say your question"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button></div>
+      </div>
+    </section>
+  </div>
+
+  <section aria-labelledby="c-dash">
+    <h2 class="block-title" id="c-dash">Dashboard</h2>
+    <div class="frames">
+      <div><p class="frame__label">Phone</p><div class="frame frame--phone"><div class="dash">
+            <div class="greet greet--fun"><svg class="blobs" viewBox="0 0 200 140" aria-hidden="true"><path d="M140 10c30 4 56 30 50 62s-38 58-72 54-56-30-50-60 42-60 72-56z" fill="var(--accent-soft)"/><circle cx="58" cy="44" r="30" fill="var(--blue-soft)"/></svg><h3>Good morning, Min-jun</h3><p>Friday, November 13</p></div>
+            <section class="tile week-wrap cal-card" aria-label="This week">
+              <div class="week-head"><span class="streak-pill"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>4-day streak</span><span class="muted" style="font-size:var(--fs-sm)">You're on a roll</span></div>
+              <div class="week-track"><span class="week-fill" style="left:calc(100%/14);width:calc(100%*4/7)" aria-hidden="true"></span>
+              <ol class="week" aria-label="This week"><li><button class="day day--done" aria-label="M 9, plan done"><span class="day__dow">M</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--done" aria-label="T 10, plan done"><span class="day__dow">T</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--done" aria-label="W 11, plan done"><span class="day__dow">W</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--done" aria-label="T 12, plan done"><span class="day__dow">T</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--today" aria-label="F 13, today"><span class="day__dow">F</span><span class="day__dot">13</span></button></li><li><button class="day" aria-label="S 14"><span class="day__dow">S</span><span class="day__dot">14</span></button></li><li><button class="day" aria-label="S 15"><span class="day__dow">S</span><span class="day__dot">15</span></button></li></ol></div>
+            </section>
+            <section class="hero-tile ex-hero">
+              <div class="section-head" style="margin:0"><div><h3 class="hero-h">One to go!</h3><p class="hero-sub">2 of 3 exercises done today</p></div>
+                <button class="btn btn--icon btn--icon-surface" aria-label="Open today's exercises full screen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg></button></div>
+              <svg class="stones" viewBox="0 0 320 84" aria-hidden="true">
+                <path d="M44 52 C 90 10, 120 10, 160 40 S 240 74, 276 34" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
+                <g class="stone s1"><circle cx="44" cy="52" r="22" fill="var(--fg)"/><path d="M35 52 l6 6 l12 -12" fill="none" stroke="var(--tile)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g class="stone s2"><circle cx="160" cy="40" r="22" fill="var(--fg)"/><path d="M151 40 l6 6 l12 -12" fill="none" stroke="var(--tile)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g class="stone s3"><circle cx="276" cy="34" r="22" fill="var(--accent)"/><circle cx="276" cy="34" r="27" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-dasharray="3 5"/><text x="276" y="40" text-anchor="middle" font-size="17" font-weight="500" fill="var(--on-accent)">3</text></g>
+              </svg>
+              <ul class="ex-list">
+                <li class="done"><span class="badge-icon badge-icon--white"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v7"/><path d="M12 9.5 18 6"/><path d="M12 9.5 8 12"/><path d="m12 14-3 7"/><path d="m12 14 3 7"/></svg></span><div class="grow"><b>Side arm raise</b><small>8 of 10 good reps</small></div><span class="tick" aria-label="Done"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+                <li class="done"><span class="badge-icon badge-icon--white"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="8" r="2"/><path d="M5 10v4h14"/><path d="M3 18h18"/></svg></span><div class="grow"><b>Quad sets</b><small>3 sets of 10</small></div><span class="tick" aria-label="Done"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+                <li><span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M12 6v5l-4 3v6"/><path d="m12 11 4 3v6"/><path d="M8 8.5h8"/></svg></span><div class="grow"><b>Mini squat</b><small>2 sets of 8, about 5 minutes</small></div><span class="ring" aria-label="Up next"></span></li>
+              </ul>
+              <div class="hero-foot"><p class="note">"Only go as low as is pain-free." Sam, your PT</p><button class="btn btn--accent btn--lg">Start session</button></div>
+            </section>
+            <div class="pair"><section class="tile"><div class="tile-head"><span class="badge-icon badge-icon--blue"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></span><div><p class="mini__k">Next visit</p><p class="mini__v">Tuesday, 2:30<small>Sam Rivera, PT</small></p></div></div></section>
+              <section class="tile"><div class="tile-head"><span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg></span><div><p class="mini__k">Medicine</p><p class="mini__v">Meloxicam<small>With dinner</small></p></div></div></section></div>
+            <section class="tile" aria-labelledby="ph-q">
+              <div class="tile-head" style="margin-bottom:var(--space-1)"><span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg></span><h3 id="ph-q" style="font-size:var(--fs-title)">For your next visit</h3></div>
+              <ul class="qlist">
+                <li><input type="checkbox" aria-label="Asked: Should we ice it?"><div>Should we ice it?<small>Dr. Lee</small></div></li>
+                <li><input type="checkbox" aria-label="Asked: knee clicks"><div>My knee clicks going downstairs<small>Sam Rivera, PT</small></div></li>
+              </ul>
+              <div class="addq"><input class="input" aria-label="Add a question" placeholder="Add a question" /><button class="btn btn--icon" aria-label="Say your question"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button></div>
+            </section>
+            <div style="height:64px" aria-hidden="true"></div>
+          </div>
+          <button class="fab" aria-label="Help"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button></div></div>
+      <div><p class="frame__label">PC</p><div class="frame frame--pc"><div class="dash dash--pc">
+            <div class="greet--pc"><div class="greet greet--fun"><svg class="blobs" viewBox="0 0 200 140" aria-hidden="true"><path d="M140 10c30 4 56 30 50 62s-38 58-72 54-56-30-50-60 42-60 72-56z" fill="var(--accent-soft)"/><circle cx="58" cy="44" r="30" fill="var(--blue-soft)"/></svg><h3>Good morning, Min-jun</h3><p>Friday, November 13</p></div>
+              <button class="btn btn--secondary"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>Help</button></div>
+            <section class="tile week-wrap cal-card" aria-label="This week">
+              <div class="week-head"><span class="streak-pill"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>4-day streak</span><span class="muted" style="font-size:var(--fs-sm)">You're on a roll</span></div>
+              <div class="week-track"><span class="week-fill" style="left:calc(100%/14);width:calc(100%*4/7)" aria-hidden="true"></span>
+              <ol class="week" aria-label="This week"><li><button class="day day--done" aria-label="Mon 9, plan done"><span class="day__dow">Mon</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--done" aria-label="Tue 10, plan done"><span class="day__dow">Tue</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--done" aria-label="Wed 11, plan done"><span class="day__dow">Wed</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--done" aria-label="Thu 12, plan done"><span class="day__dow">Thu</span><span class="day__dot"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></button></li><li><button class="day day--today" aria-label="Fri 13, today"><span class="day__dow">Fri</span><span class="day__dot">13</span></button></li><li><button class="day" aria-label="Sat 14"><span class="day__dow">Sat</span><span class="day__dot">14</span></button></li><li><button class="day" aria-label="Sun 15"><span class="day__dow">Sun</span><span class="day__dot">15</span></button></li></ol></div>
+            </section>
+            <section class="hero-tile ex-hero">
+              <div class="section-head" style="margin:0"><div><h3 class="hero-h">One to go!</h3><p class="hero-sub">2 of 3 exercises done today</p></div>
+                <button class="btn btn--icon btn--icon-surface" aria-label="Open today's exercises full screen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg></button></div>
+              <svg class="stones" viewBox="0 0 320 84" aria-hidden="true">
+                <path d="M44 52 C 90 10, 120 10, 160 40 S 240 74, 276 34" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
+                <g class="stone s1"><circle cx="44" cy="52" r="22" fill="var(--fg)"/><path d="M35 52 l6 6 l12 -12" fill="none" stroke="var(--tile)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g class="stone s2"><circle cx="160" cy="40" r="22" fill="var(--fg)"/><path d="M151 40 l6 6 l12 -12" fill="none" stroke="var(--tile)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g class="stone s3"><circle cx="276" cy="34" r="22" fill="var(--accent)"/><circle cx="276" cy="34" r="27" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-dasharray="3 5"/><text x="276" y="40" text-anchor="middle" font-size="17" font-weight="500" fill="var(--on-accent)">3</text></g>
+              </svg>
+              <ul class="ex-list">
+                <li class="done"><span class="badge-icon badge-icon--white"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v7"/><path d="M12 9.5 18 6"/><path d="M12 9.5 8 12"/><path d="m12 14-3 7"/><path d="m12 14 3 7"/></svg></span><div class="grow"><b>Side arm raise</b><small>8 of 10 good reps</small></div><span class="tick" aria-label="Done"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+                <li class="done"><span class="badge-icon badge-icon--white"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="8" r="2"/><path d="M5 10v4h14"/><path d="M3 18h18"/></svg></span><div class="grow"><b>Quad sets</b><small>3 sets of 10</small></div><span class="tick" aria-label="Done"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+                <li><span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M12 6v5l-4 3v6"/><path d="m12 11 4 3v6"/><path d="M8 8.5h8"/></svg></span><div class="grow"><b>Mini squat</b><small>2 sets of 8, about 5 minutes</small></div><span class="ring" aria-label="Up next"></span></li>
+              </ul>
+              <div class="hero-foot"><p class="note">"Only go as low as is pain-free." Sam, your PT</p><button class="btn btn--accent btn--lg" style="width:auto;padding:0 var(--space-5)">Start session</button></div>
+            </section>
+            <div class="side"><section class="tile"><div class="tile-head"><span class="badge-icon badge-icon--blue"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></span><div><p class="mini__k">Next visit</p><p class="mini__v">Tuesday, 2:30<small>Sam Rivera, PT</small></p></div></div></section>
+              <section class="tile"><div class="tile-head"><span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg></span><div><p class="mini__k">Medicine</p><p class="mini__v">Meloxicam<small>With dinner</small></p></div></div></section><section class="tile"><div class="tile-head"><span class="badge-icon badge-icon--peach"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg></span><p class="mini__k">For your next visit</p></div><ul class="qlist"><li style="border:0"><input type="checkbox" aria-label="Asked: Should we ice it?"><div>Should we ice it?<small>Dr. Lee</small></div></li><li><input type="checkbox" aria-label="Asked: knee clicks"><div>My knee clicks going downstairs<small>Sam Rivera, PT</small></div></li></ul><div class="addq"><input class="input" aria-label="Add a question" placeholder="Add one" /><button class="btn btn--icon" aria-label="Say your question"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button></div></section></div>
+          </div></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="c-plan">
+    <h2 class="block-title" id="c-plan">Exercise plan, full screen</h2>
+    <div class="plan" role="dialog" aria-label="Today's plan (example)">
+      <div class="plan__top">
+        <div><h3 style="font-size:26px;font-weight:var(--w-regular)">Today's plan</h3><p>About 15 minutes. You'll need a chair and a counter for balance.</p></div>
+        <button class="btn btn--icon" aria-label="Close full screen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="plan__body">
+        <p class="safety"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Stop and rest if pain goes above 4 out of 10, or if you feel dizzy.</p>
+        <div>
+          <div class="done-row"><span>Side arm raise</span><span class="status status--good"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Done</span></div>
+          <div class="done-row"><span>Quad sets</span><span class="status status--good"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Done</span></div>
+        </div>
+        <article class="stack" aria-labelledby="pl-squat" style="gap:var(--space-4)">
+          <h3 id="pl-squat" style="font-size:var(--fs-title)">Mini squat</h3>
+          <div class="demo"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M12 6v6l-3 4v5"/><path d="M12 12l3 4v5"/><path d="M8 9h8"/></svg>
+            <button class="btn"><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>Watch demo</button></div>
+          <dl class="facts" style="margin:0">
+            <div><dt>Sets and reps</dt><dd class="num">2 × 8</dd></div>
+            <div><dt>Bend knees to</dt><dd class="num">110°</dd></div>
+            <div><dt>Rest between sets</dt><dd class="num">30 seconds</dd></div>
+            <div><dt>The camera</dt><dd>Counts your reps</dd></div>
+          </dl>
+          <div><h4>How to do it</h4><ol><li>Stand side-on to the phone, feet hip-width apart.</li><li>Hold a counter if you need balance.</li><li>Bend your knees slowly, like sitting back into a chair.</li><li>Stand back up tall.</li></ol></div>
+          <div><h4>A good rep</h4><ul class="checks"><li><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Knees bend to the target</li><li><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>About 3 seconds down, 3 seconds up</li><li><svg class="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Chest stays up</li></ul></div>
+          <blockquote class="quote">"Only go as low as is pain-free."<small>Sam Rivera, PT</small></blockquote>
+          <p class="fine">Last time: 6 of 8 good reps. Steadier than last week.</p>
+          <div class="row"><button class="btn btn--secondary">Start this one</button><button class="btn btn--ghost">Ask about this</button></div>
+        </article>
+      </div>
+      <div class="plan__foot"><button class="btn btn--accent btn--lg">Start session</button></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="c-done">
+    <h2 class="block-title" id="c-done">When a session ends</h2>
+    <div class="celebrate">
+      <svg class="confetti" viewBox="0 0 400 120" aria-hidden="true">
+        <circle cx="40" cy="30" r="6" fill="var(--accent)"/><rect x="90" y="14" width="12" height="12" rx="3" transform="rotate(20 96 20)" fill="var(--primary-soft)"/>
+        <circle cx="150" cy="52" r="4" fill="var(--primary)"/><rect x="210" y="22" width="10" height="16" rx="3" transform="rotate(-25 215 30)" fill="var(--accent)"/>
+        <circle cx="270" cy="40" r="7" fill="var(--blue-soft)"/><rect x="320" y="12" width="12" height="12" rx="3" transform="rotate(35 326 18)" fill="var(--primary)"/>
+        <circle cx="360" cy="60" r="5" fill="var(--accent)"/><circle cx="70" cy="80" r="4" fill="var(--primary)"/><circle cx="330" cy="96" r="4" fill="var(--primary-soft)"/>
+      </svg>
+      <h3 class="hero-h" style="text-align:center">Session done!</h3>
+      <p class="muted" style="text-align:center;margin-top:4px">7 of 8 good reps on mini squats. Your best yet.</p>
+      <fieldset class="pain">
+        <legend>How much pain did you feel?</legend>
+        <div class="painrow"><label class="painpill"><input type="radio" name="pain" value="0" /><span>0</span></label><label class="painpill"><input type="radio" name="pain" value="1" /><span>1</span></label><label class="painpill"><input type="radio" name="pain" value="2" checked/><span>2</span></label><label class="painpill"><input type="radio" name="pain" value="3" /><span>3</span></label><label class="painpill"><input type="radio" name="pain" value="4" /><span>4</span></label><label class="painpill"><input type="radio" name="pain" value="5" /><span>5</span></label><label class="painpill"><input type="radio" name="pain" value="6" /><span>6</span></label><label class="painpill"><input type="radio" name="pain" value="7" /><span>7</span></label><label class="painpill"><input type="radio" name="pain" value="8" /><span>8</span></label><label class="painpill"><input type="radio" name="pain" value="9" /><span>9</span></label><label class="painpill"><input type="radio" name="pain" value="10" /><span>10</span></label></div>
+        <div class="painends"><span>No pain</span><span>Worst</span></div>
+      </fieldset>
+      <div class="addq"><input class="input" aria-label="Anything to tell your therapist?" placeholder="Anything to tell your therapist?" /><button class="btn btn--icon" aria-label="Say it"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button></div>
+      <button class="btn btn--accent btn--lg">Save and finish</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="c-hud">
+    <h2 class="block-title" id="c-hud">Live session</h2>
+    <div class="hud">
+      <div class="hud__stage">camera and skeleton</div>
+      <div class="hud__bar">
+        <div class="hud__m"><div><small>Right shoulder</small><b class="num">128°</b></div><div><small>Target</small><b class="num">140°</b></div><div><small>Reps</small><b class="num">3/10</b></div><div><small>Good</small><b class="num">2</b></div></div>
+        <div class="progress"><div class="progress__fill"></div><div class="progress__target"></div></div>
+        <p class="coach">Rep 3: raise your arm a little higher</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="tile" aria-labelledby="c-chart" style="padding:var(--space-4)">
+    <h2 id="c-chart" style="font-size:var(--fs-title)">Right shoulder angle: 2 of 5 reps flagged</h2>
+    <p class="fine" style="margin-top:4px">Rep 2 stopped at 110°. Rep 4 was too fast.</p>
+    <svg class="chart" viewBox="0 0 700 220" role="img" aria-label="Angle over time. Reps 1, 3 and 5 reached the 140 degree target. Rep 2 peaked at 110 degrees. Rep 4 was too fast." style="width:100%;height:auto;margin-top:var(--space-3)">
+      <rect x="60" y="10" width="90" height="180" rx="10" fill="var(--good-bg)"/><rect x="180" y="10" width="90" height="180" rx="10" fill="var(--fair-bg)"/>
+      <rect x="300" y="10" width="90" height="180" rx="10" fill="var(--good-bg)"/><rect x="420" y="10" width="50" height="180" rx="10" fill="var(--poor-bg)"/><rect x="500" y="10" width="90" height="180" rx="10" fill="var(--good-bg)"/>
+      <line x1="40" x2="690" y1="50" y2="50" stroke="var(--primary-ink)" stroke-width="1.5" stroke-dasharray="6 6"/>
+      <text x="606" y="42" font-size="14" fill="var(--primary-ink)">target 140°</text>
+      <polyline fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round" points="40,185 60,185 95,40 115,40 150,185 180,185 215,95 235,95 270,185 300,185 335,40 355,40 390,185 420,185 440,45 470,185 500,185 535,40 555,40 590,185 690,185"/>
+      <path d="M225 80 l9 -16 l9 16 z" fill="var(--fair)"/><text x="248" y="78" font-size="14" fill="var(--fair)">2</text>
+      <path d="M433 28 l14 14 M447 28 l-14 14" stroke="var(--poor)" stroke-width="2.5"/><text x="452" y="40" font-size="14" fill="var(--poor)">4</text>
+      <text x="40" y="210" font-size="13" fill="var(--muted)">0s</text><text x="650" y="210" font-size="13" fill="var(--muted)">35s</text>
+    </svg>
+  </section>
+</main>
+<script>
+  const notes = {
+    '"Lexend"': 'Designed to make reading easier. Open, even letters; works at light weights.',
+    '"Atkinson Hyperlegible"': 'Built for low vision: very distinct letters, a little less polished.',
+    '"Inter"': 'Clean, modern UI font; very readable at every size.',
+    '"Josefin Sans"': 'Elegant and geometric; small lowercase is harder to read for older eyes.',
+    '"Roboto"': 'Familiar and neutral; readable.',
+  };
+  const setFont = (v) => {
+    document.documentElement.style.setProperty('--font', `${v}, system-ui, -apple-system, "Segoe UI", sans-serif`);
+    document.getElementById('font-name').textContent = v.replaceAll('"', '');
+    document.getElementById('font-note').textContent = notes[v];
+    try { localStorage.setItem('preview-font', v); } catch {}
+  };
+  document.querySelectorAll('input[name=font]').forEach((r) => r.addEventListener('change', () => setFont(r.value)));
+  try { const s = localStorage.getItem('preview-font'); if (s && notes[s]) { setFont(s); document.querySelector(`input[name=font][value='${s}']`).checked = true; } } catch {}
+  const b = document.getElementById('theme');
+  b.onclick = () => {
+    const dark = document.documentElement.dataset.theme !== 'dark';
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    b.setAttribute('aria-pressed', dark);
+    b.querySelector('span').textContent = dark ? 'Light' : 'Dark';
+  };
+</script>
+</body>
+</html>

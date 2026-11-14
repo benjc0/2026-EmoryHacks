@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>PT Session</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ============ 1. PICK AN EXERCISE ============ -->
+  <section id="screen-pick" class="screen page active">
+    <header>
+      <h1>Today's exercises</h1>
+      <p class="sub">Pick one, prop your phone up, and press Start session.</p>
+    </header>
+    <ul id="exercise-list" class="exlist"></ul>
+
+    <form id="settings" class="card stack">
+      <h2 id="set-title"></h2>
+      <p id="set-note" class="muted"></p>
+      <div class="row3">
+        <label>Target angle <input id="set-target" type="number" min="0" max="180" inputmode="numeric" /></label>
+        <label>Reps <input id="set-reps" type="number" min="1" max="50" inputmode="numeric" /></label>
+        <label>Side
+          <select id="set-side"><option value="auto">Auto</option><option value="right">Right</option><option value="left">Left</option></select>
+        </label>
+      </div>
+      <label class="check"><input type="checkbox" id="set-voice" checked /> Spoken feedback</label>
+      <button class="primary big" type="submit">▶︎ Start session</button>
+      <p class="fine">The camera runs on this device. The video is only saved if you download it at the end.</p>
+    </form>
+  </section>
+
+  <!-- ============ 2. LIVE SESSION ============ -->
+  <section id="screen-session" class="screen dark">
+    <header class="topbar">
+      <span id="rec-dot" class="dot" aria-hidden="true"></span>
+      <span id="rec-time">00:00</span>
+      <span id="sess-title" class="grow ellipsis"></span>
+      <button id="end-btn" class="chip">■ End</button>
+    </header>
+
+    <div class="stage-wrap">
+      <div id="stage" class="stage mirror">
+        <video id="cam" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div id="countdown" class="countdown" hidden></div>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="metrics">
+        <div><small>Angle</small><b id="m-angle">–</b></div>
+        <div><small>Target</small><b id="m-target">–</b></div>
+        <div><small>Reps</small><b id="m-reps">0/0</b></div>
+        <div><small>Good</small><b id="m-good">0</b></div>
+      </div>
+      <div class="bar" aria-hidden="true"><div id="bar-fill"></div><div id="bar-target"></div></div>
+      <p id="coach" class="coach" role="status" aria-live="assertive">Opening the camera…</p>
+      <div id="setup" class="setup">
+        <p id="setup-text"></p>
+        <p id="frame-check" class="frame-check"></p>
+        <button id="start-now" class="secondary">Start now</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. RESULTS ============ -->
+  <section id="screen-results" class="screen page wide">
+    <header class="between">
+      <div><h1 id="res-title">Session done</h1><p class="sub" id="res-sub"></p></div>
+      <button id="again" class="secondary">New session</button>
+    </header>
+
+    <div id="stats" class="stats"></div>
+
+    <form id="pain-form" class="card stack">
+      <label>How much pain did you feel? <span class="muted">0 = none, 10 = worst</span>
+        <input id="pain" type="range" min="0" max="10" value="0" />
+        <output id="pain-out" class="pain-out">0</output>
+      </label>
+      <label>Anything to tell your therapist?
+        <span class="row"><textarea id="note" rows="2"></textarea><button type="button" id="note-mic" class="secondary">🎙️</button></span>
+      </label>
+      <button class="primary">Save pain check</button>
+      <p id="pain-saved" class="ok" hidden>✓ Saved with the session data</p>
+    </form>
+
+    <div class="review">
+      <div>
+        <div id="rv-stage" class="stage"><video id="rv-video" playsinline controls></video><canvas id="rv-overlay"></canvas></div>
+        <canvas id="chart" class="chart" aria-label="Joint angle over time"></canvas>
+        <p class="fine">Shaded bands are reps: green good, amber fair, red poor. Tap the chart or a rep to jump the video.</p>
+      </div>
+      <div>
+        <table class="reps"><thead><tr><th>#</th><th>Peak</th><th>Time</th><th>Score</th><th>Feedback</th></tr></thead><tbody id="rep-rows"></tbody></table>
+        <div class="row">
+          <button id="dl-video" class="secondary">⬇︎ Video</button>
+          <button id="dl-data" class="secondary">⬇︎ Tracking data (JSON)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
