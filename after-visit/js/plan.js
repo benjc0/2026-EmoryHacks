@@ -34,6 +34,12 @@ export function planExercise(item) {
     reps: item.reps ?? base.reps,
     target: item.target ?? base.target,
     instruction: item.instruction || base.setup,
+    name: item.name || base.name,
+    holdMs: item.holdMs ?? base.holdMs,
+    checks: [...(base.checks || []), ...(item.checks || [])],
+    note: item.note || base.note,
+    sets: item.sets ?? 1,
+    perDay: item.perDay ?? null,
   };
 }
 

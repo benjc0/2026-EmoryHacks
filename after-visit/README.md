@@ -31,6 +31,17 @@ No backend, no install, nothing leaves the device unless you download it.
 
 ## Run it
 
+To test the connected dashboard and doctor's visit flow together, run the visit backend from the repository root:
+
+```powershell
+cd during-visit/backend
+python -m uvicorn main:app --host 0.0.0.0 --port 8001
+```
+
+Open **http://localhost:8001/pt/** for the dashboard. **Start a doctor's visit** opens the visit app on the same server; returning loads the visit's plan, medicines, appointments, and questions. The backend finds the sibling `after-visit` folder automatically. Install the backend requirements and configure its API credentials as described in `during-visit/README.md` first.
+
+If you instead serve the dashboard separately on port 8000, it connects to the visit backend on port 8001. For another address, open `index.html?server=http://localhost:9000`; the app remembers the server. The Help panel includes **Reset demo data** (the backend must allow resets).
+
 The camera only works on `http://localhost` or an `https://` address, and ES modules don't load from `file://`, so serve the folder:
 
 ```cmd

@@ -9,6 +9,8 @@ import { ExerciseTracker } from './js/exerciseTracker.js';
 import { store } from './js/store.js';
 import { drawPose } from './js/draw.js';
 import { loadPose, openCamera, stopStream, Recorder, startPoseLoop } from './js/tracker.js';
+import { visitConnection } from './js/visitConnection.js';
+import { readData, writeData, recordCompletion } from './js/dashboardData.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -43,8 +45,23 @@ function speak(text) {
 }
 
 // ---------------------------------------------------------------- 1. plan
-const PLAN = DEMO_PLAN;
+let browserStorage; try { browserStorage = localStorage; } catch {}
+const connection = visitConnection(location.href, browserStorage);
+let PLAN = DEMO_PLAN;
+try {
+  const cached = JSON.parse(browserStorage?.getItem('visitCopilot.plan') || 'null');
+  if (cached && cached.patientId === connection.patientId && Array.isArray(cached.exercises)) PLAN = cached;
+} catch {}
+const selected = new URLSearchParams(location.search).get('exercises');
+if (selected) PLAN = { ...PLAN, exercises: PLAN.exercises.filter(ex => selected.split(',').includes(ex.id)) };
 const EXS = planExercises(PLAN);
+// Keep the same patient and backend when returning from either training path.
+const contextQuery = new URLSearchParams({ patient_id: connection.patientId, server: connection.server });
+for (const link of document.querySelectorAll('a[href="index.html"]')) link.href = `index.html?${contextQuery}`;
+document.querySelector('a[href="coach-test.html"]').href = `coach-test.html?${contextQuery}`;
+$('#start').disabled = EXS.length === 0;
+const painLimit = PLAN.program?.pain_stop_level ?? 4;
+$('#screen-plan .safety span').textContent = `Stop and rest if pain goes above ${painLimit} out of 10, or if you feel dizzy. ${(PLAN.program?.precautions || []).join(' ')}`;
 
 function renderPlan() {
   const minutes = Math.max(3, Math.round(EXS.reduce((s, e) => s + e.reps * 5 + 40, 0) / 60));
@@ -322,6 +339,13 @@ async function finishSession() {
   active = false;
   const summary = log.toRecord();
   const t = summary.totals;
+  try {
+    let progress = readData();
+    for (const ex of summary.exercises) {
+      if (!ex.skipped) progress = recordCompletion(progress, { exercise_id: ex.id, recorded_at: summary.startedAt, reps_target: ex.repsTarget, summary: ex.summary });
+    }
+    writeData(progress);
+  } catch (err) { console.error('Could not update dashboard progress', err); }
   $('#done-sub').textContent = t.reps ? `${t.good} of ${t.reps} reps were good.` : 'No reps were counted this time.';
   $('#done-list').innerHTML = summary.exercises.map((e) => `<li><span>${esc(e.name)}</span>${e.skipped
     ? '<span class="status status--fair">Skipped</span>'
@@ -344,6 +368,18 @@ async function finishSession() {
     saved.textContent = "Couldn't save this session. There may not be enough space on this phone.";
   }
   window.__lastSession = summary;     // handy for checking in DevTools
+  // Save the result to the same patient record used by the dashboard.
+  if (PLAN.source === 'during-visit' || connection.server) {
+    try {
+      const response = await fetch(`${connection.server}/api/pt/sessions?patient_id=${encodeURIComponent(connection.patientId)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(summary),
+      });
+      if (!response.ok) throw new Error(response.status);
+    } catch (err) {
+      console.error('Could not sync home session', err);
+      saved.textContent += ' Your visit record could not be updated. This session remains on this device.';
+    }
+  }
 }
 $('#again').addEventListener('click', () => show('plan'));
 
