@@ -37,6 +37,9 @@ TYPESENSE_API_KEY = os.getenv("TYPESENSE_API_KEY", "")
 # cluster. Set to "off" to skip vector fields entirely.
 TYPESENSE_EMBED_MODEL = os.getenv("TYPESENSE_EMBED_MODEL", "ts/paraphrase-multilingual-mpnet-base-v2")
 
+# Where the JSON backup of every visit is written (backend/data by default).
+DATA_DIR = os.getenv("DATA_DIR", str(Path(__file__).parent / "data"))
+
 TYPESENSE_URL = f"{TYPESENSE_PROTOCOL}://{TYPESENSE_HOST}:{TYPESENSE_PORT}" if TYPESENSE_HOST else ""
 
 LANG_NAMES = {

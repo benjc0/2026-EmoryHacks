@@ -23,6 +23,7 @@ from pydantic import BaseModel
 import config
 import extract
 import search_index
+import storage
 from demo_script import pick_demo
 from live import LiveInterpreter
 
@@ -92,6 +93,18 @@ class Visit:
                 "summary_pending": bool(self.finish_task and not self.finish_task.done()),
                 "summary_failed": self.summary_failed}
 
+    def record(self) -> dict:
+        """Everything worth keeping about the visit (what gets saved and indexed)."""
+        return {**self.public(), "notes": self.merged_notes(), "ended": self.ended,
+                "saved_at": time.time()}
+
+    async def save(self):
+        """Write the JSON backup without blocking the server."""
+        try:
+            await asyncio.to_thread(storage.save_visit, self.record())
+        except Exception as e:
+            log.warning("backup save failed: %s", e)
+
     async def push_notes(self):
         await self.emit({"type": "notes", "notes": self.merged_notes(), "questions": self.questions})
 
@@ -115,6 +128,7 @@ class Visit:
                 q["status"], q["evidence"] = s["status"], s.get("evidence")
         self.notes = data
         await self.push_notes()
+        await self.save()
         if data.get("wrapping_up"):
             await self.remind_open_questions(reason="wrapping_up")
             self.start_draft_summary()
@@ -206,6 +220,10 @@ async def demo_questions(lang: str = "ko"):
 
 @app.get("/api/visits/{vid}")
 async def visit_detail(vid: str):
+    if vid not in VISITS:
+        saved = storage.load_visit(vid)
+        if saved:
+            return saved
     return get_visit(vid).public()
 
 
@@ -295,13 +313,14 @@ async def _finish_visit(v: "Visit"):
             v.summary_failed = True
         else:
             v.summary = results[0].model_dump(mode="json")
+    await v.save()                      # backup first, so nothing is lost if Typesense fails
     if config.TYPESENSE_URL:
         await _index_in_background(v)
 
 
 async def _index_in_background(v: Visit):
     try:
-        counts = await search_index.index_visit({**v.public(), "notes": v.merged_notes()})
+        counts = await search_index.index_visit(v.record())
         log.info("indexed visit %s: %s", v.id, counts)
     except Exception as e:
         log.warning("typesense indexing failed: %s", e)

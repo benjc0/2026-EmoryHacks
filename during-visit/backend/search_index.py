@@ -2,6 +2,8 @@
 
 Run once to create collections + synonyms:
     python search_index.py setup          (add --reset to drop and recreate)
+Rebuild Typesense from the JSON backups in backend/data/visits:
+    python search_index.py reindex
 
 Talks to Typesense over plain HTTP so it works on v29 and v30+ (synonym sets).
 """
@@ -206,8 +208,27 @@ async def index_visit(visit: dict) -> dict[str, int]:
     return counts
 
 
+def reindex():
+    """Load every saved visit from the JSON backup into Typesense."""
+    import asyncio
+    import storage
+    if not config.TYPESENSE_URL:
+        sys.exit("Set TYPESENSE_HOST and TYPESENSE_API_KEY first (see .env.example).")
+    visits = storage.load_all()
+    if not visits:
+        print(f"No saved visits in {storage.VISITS_DIR}")
+        return
+    for v in visits:
+        counts = asyncio.run(index_visit(v))
+        print(f"{v['id']} ({v.get('provider') or 'no provider'}): {counts}")
+    print(f"Reindexed {len(visits)} visit(s).")
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "setup":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "setup":
         setup(reset="--reset" in sys.argv)
+    elif cmd == "reindex":
+        reindex()
     else:
         print(__doc__)
