@@ -1,0 +1,224 @@
+{
+  "id": "4d78d8b1ad5c",
+  "patient_id": "demo-patient",
+  "provider": "Dr Lee",
+  "specialty": "",
+  "doctor_lang": "en",
+  "patient_lang": "en",
+  "started_at": 1794678876.7954454,
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Can I still have a glass of wine with dinner?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    },
+    {
+      "id": "q2",
+      "text": "Do I need to stop taking ibuprofen?",
+      "text_doctor_lang": null,
+      "status": "answered",
+      "evidence": "Please stop taking ibuprofen or Advil."
+    },
+    {
+      "id": "q3",
+      "text": "Is it safe for me to drive?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    },
+    {
+      "id": "q4",
+      "text": "Will the new medicine make me dizzy?",
+      "text_doctor_lang": null,
+      "status": "open",
+      "evidence": null
+    }
+  ],
+  "notes": {
+    "diagnoses": [
+      {
+        "name": "atrial fibrillation",
+        "explanation_patient_lang": "This is an irregular heartbeat that can increase your risk of having a stroke."
+      },
+      {
+        "name": "high blood pressure",
+        "explanation_patient_lang": "Your blood pressure reading was high today at 152 over 94."
+      }
+    ],
+    "medications": [
+      {
+        "name": "apixaban",
+        "generic_name": null,
+        "dose": "5 milligrams",
+        "frequency": "twice a day, morning and evening",
+        "purpose": "blood thinner",
+        "instructions": "Don't skip doses.",
+        "change": "new",
+        "explanation_patient_lang": "This is a new blood thinner to help prevent strokes. Take it twice every day."
+      },
+      {
+        "name": "lisinopril",
+        "generic_name": null,
+        "dose": "20 milligrams",
+        "frequency": "once a day",
+        "purpose": "blood pressure",
+        "instructions": null,
+        "change": "changed",
+        "explanation_patient_lang": "Your dose is being increased from 10mg to 20mg to better control your blood pressure."
+      },
+      {
+        "name": "ibuprofen",
+        "generic_name": null,
+        "dose": null,
+        "frequency": null,
+        "purpose": "pain",
+        "instructions": "Stop taking this; use Tylenol instead.",
+        "change": "stopped",
+        "explanation_patient_lang": "You must stop taking ibuprofen or Advil because it increases your risk of bleeding while on a blood thinner."
+      }
+    ],
+    "exercises": [
+      {
+        "name": "walking",
+        "body_part": "heart/cardiovascular",
+        "sets": null,
+        "reps": "30 minutes",
+        "frequency": "5 days a week",
+        "form_cues": [
+          "pace where you can still talk"
+        ],
+        "explanation_patient_lang": "Try to walk for 30 minutes most days of the week at a steady pace."
+      }
+    ],
+    "care_items": [
+      {
+        "type": "instruction",
+        "text": "check your blood pressure at home every morning and write it down",
+        "text_patient_lang": "Please track your blood pressure every morning and keep a log of the numbers.",
+        "due": "every morning"
+      },
+      {
+        "type": "test",
+        "text": "blood test to check your kidneys",
+        "text_patient_lang": "You need a blood test to make sure your kidneys are handling the medication change well.",
+        "due": "in one week"
+      },
+      {
+        "type": "follow_up",
+        "text": "see you back here in three months",
+        "text_patient_lang": "We will meet again in three months to check on your progress.",
+        "due": "in three months"
+      },
+      {
+        "type": "warning_sign",
+        "text": "black stools, blood in your urine, or bruising that won't stop",
+        "text_patient_lang": "Call the office immediately if you see signs of internal bleeding like dark stools or unusual bruising.",
+        "due": null
+      },
+      {
+        "type": "warning_sign",
+        "text": "face drooping, arm weakness, or trouble speaking",
+        "text_patient_lang": "Call 911 immediately if you have signs of a stroke, such as weakness on one side or difficulty talking.",
+        "due": null
+      }
+    ],
+    "wrapping_up": true
+  },
+  "utterances": [
+    {
+      "id": "a4ae007784",
+      "speaker": "doctor",
+      "original": "Good morning, Mr. Johnson. I'm Dr. Patel. How have you been feeling since your last visit?",
+      "translated": "Good morning, Mr. Johnson. I'm Dr. Patel. How have you been feeling since your last visit?",
+      "t": 1.0049545764923096
+    },
+    {
+      "id": "7978605514",
+      "speaker": "patient",
+      "original": "Mostly okay. But my heart sometimes flutters, and I get tired walking up the stairs.",
+      "translated": "Mostly okay. But my heart sometimes flutters, and I get tired walking up the stairs.",
+      "t": 4.012282848358154
+    },
+    {
+      "id": "6a125ff207",
+      "speaker": "doctor",
+      "original": "Your monitor results came back. The fluttering is atrial fibrillation. It's an irregular heartbeat, and it raises the risk of stroke.",
+      "translated": "Your monitor results came back. The fluttering is atrial fibrillation. It's an irregular heartbeat, and it raises the risk of stroke.",
+      "t": 7.497164249420166
+    },
+    {
+      "id": "2a48136fda",
+      "speaker": "patient",
+      "original": "A stroke? That sounds serious.",
+      "translated": "A stroke? That sounds serious.",
+      "t": 11.517073392868042
+    },
+    {
+      "id": "e029e1074b",
+      "speaker": "doctor",
+      "original": "It's very manageable. I'm starting you on apixaban, a blood thinner. Five milligrams, twice a day, morning and evening. Don't skip doses.",
+      "translated": "It's very manageable. I'm starting you on apixaban, a blood thinner. Five milligrams, twice a day, morning and evening. Don't skip doses.",
+      "t": 15.001986742019653
+    },
+    {
+      "id": "8edfd9845c",
+      "speaker": "doctor",
+      "original": "Your blood pressure is also high today, 152 over 94. I'm increasing your lisinopril from 10 milligrams to 20 milligrams, once a day.",
+      "translated": "Your blood pressure is also high today, 152 over 94. I'm increasing your lisinopril from 10 milligrams to 20 milligrams, once a day.",
+      "t": 19.015055418014526
+    },
+    {
+      "id": "154a9ae704",
+      "speaker": "doctor",
+      "original": "Please stop taking ibuprofen or Advil. With the blood thinner, it raises your bleeding risk. Use Tylenol for pain instead.",
+      "translated": "Please stop taking ibuprofen or Advil. With the blood thinner, it raises your bleeding risk. Use Tylenol for pain instead.",
+      "t": 23.016632795333862
+    },
+    {
+      "id": "90c63117de",
+      "speaker": "doctor",
+      "original": "I'd like you to walk thirty minutes a day, five days a week, at a pace where you can still talk. And check your blood pressure at home every morning and write it down.",
+      "translated": "I'd like you to walk thirty minutes a day, five days a week, at a pace where you can still talk. And check your blood pressure at home every morning and write it down.",
+      "t": 27.020054817199707
+    },
+    {
+      "id": "b6a3710036",
+      "speaker": "doctor",
+      "original": "We'll do a blood test in one week to check your kidneys after the dose change, and I'll see you back here in three months.",
+      "translated": "We'll do a blood test in one week to check your kidneys after the dose change, and I'll see you back here in three months.",
+      "t": 30.991751194000244
+    },
+    {
+      "id": "390df641d2",
+      "speaker": "doctor",
+      "original": "Call us right away if you notice black stools, blood in your urine, or bruising that won't stop. And call 911 if you have face drooping, arm weakness, or trouble speaking.",
+      "translated": "Call us right away if you notice black stools, blood in your urine, or bruising that won't stop. And call 911 if you have face drooping, arm weakness, or trouble speaking.",
+      "t": 34.51771950721741
+    },
+    {
+      "id": "124a05cb5b",
+      "speaker": "doctor",
+      "original": "Alright, I think that's everything for today. Do you have any other questions before you go?",
+      "translated": "Alright, I think that's everything for today. Do you have any other questions before you go?",
+      "t": 37.495452642440796
+    }
+  ],
+  "summary": {
+    "summary_doctor_lang": "The patient was diagnosed with atrial fibrillation and persistent hypertension, with a current reading of 152/94. To mitigate stroke risk, apixaban 5 mg twice daily was initiated, and the lisinopril dosage was increased to 20 mg daily for better blood pressure control. The patient was instructed to discontinue ibuprofen to avoid increased bleeding risk and to substitute it with Tylenol. A follow-up blood test for renal function is scheduled for one week, and the patient will monitor blood pressure daily at home. We will re-evaluate his progress in three months.",
+    "summary_patient_lang": "Today we found that you have an irregular heartbeat called atrial fibrillation and high blood pressure. To keep you safe from a stroke, you will start a new blood thinner called apixaban 5 milligrams twice a day. We are also increasing your blood pressure medicine, lisinopril, to 20 milligrams once a day. You must stop taking ibuprofen or Advil because they can cause dangerous bleeding when mixed with your new blood thinner; use Tylenol instead. Please walk for 30 minutes most days and write down your blood pressure every morning. Please confirm anything unclear with the care team.",
+    "key_points_patient_lang": [
+      "Take apixaban 5 mg twice a day and lisinopril 20 mg once a day.",
+      "Stop taking ibuprofen (Advil) and use Tylenol for pain instead.",
+      "Get a blood test in one week and return for a check-up in three months.",
+      "Check and record your blood pressure every morning.",
+      "Call the office for dark stools or bruising that won't stop.",
+      "Call 911 for face drooping, arm weakness, or trouble speaking."
+    ]
+  },
+  "summary_pending": true,
+  "summary_failed": false,
+  "ended": true,
+  "saved_at": 1794678922.6299071
+}
