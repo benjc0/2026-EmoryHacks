@@ -65,3 +65,41 @@ export async function watchCall(base, callId, onUpdate, {
   }
   return null;
 }
+
+/** One plain line for what the coach is doing right now (from /api/coach/progress), or '' when there is nothing to say. */
+export function progressText(p) {
+  if (!p || !p.phase) return '';
+  const where = p.exercises > 1 ? `Exercise ${p.exercise} of ${p.exercises}` : 'Your exercise';
+  if (p.phase === 'positioning') return `${where}: ${p.name}. Step back so your coach can see you from head to feet.`;
+  if (p.phase === 'recording') return `${where}: ${p.name}. ${p.reps} of ${p.target} reps${p.reps ? `, ${p.good} good` : ''}.`;
+  if (p.phase === 'pain') return 'All your exercises are done. Your coach is asking how you feel.';
+  if (p.phase === 'done') return 'Session finished. Saving your results…';
+  return '';
+}
+
+/** What the coach is doing right now, or null when it can't be reached or nothing is happening. */
+export async function coachProgress(base, fetchImpl = fetch) {
+  try {
+    const r = await fetchImpl(`${base}/api/coach/progress`, { signal: AbortSignal.timeout(3000) });
+    const j = await r.json();
+    return r.ok && j.phase && j.phase !== 'none' ? j : null;
+  } catch { return null; }
+}
+
+/**
+ * The coach's saved record of the call that began at `sinceIso`, or null. The coach saves a moment after hang-up,
+ * so this tries a few times. A record from an earlier call is never returned.
+ */
+export async function coachLastSession(base, sinceIso, { fetchImpl = fetch, tries = 8, intervalMs = 2500, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetchImpl(`${base}/api/coach/last`, { signal: AbortSignal.timeout(4000) });
+      if (r.ok) {
+        const rec = await r.json();
+        if (rec?.endedAt && rec.startedAt >= new Date(new Date(sinceIso).getTime() - 120_000).toISOString()) return rec;
+      }
+    } catch { /* try again */ }
+    if (i < tries - 1) await sleep(intervalMs);
+  }
+  return null;
+}

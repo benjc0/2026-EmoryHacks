@@ -6,6 +6,7 @@
 import { DEMO_PLAN, planExercises } from './js/plan.js';
 import { exerciseArt } from './js/exerciseArt.js';
 import { standGuide } from './js/standGuide.js';
+import { sessionResults, resultsHtml } from './js/results.js';
 import { SessionLog } from './js/sessionLog.js';
 import { ExerciseTracker } from './js/exerciseTracker.js';
 import { store } from './js/store.js';
@@ -351,7 +352,6 @@ function endRemaining() {
 }
 
 // ---------------------------------------------------------------- 4. done
-const allGood = (e) => e.summary.totalReps > 0 && e.summary.goodReps === e.summary.totalReps;
 async function finishSession() {
   cam?.stop?.(); stopStream(cam?.stream); cam?.wake?.release?.(); cam = null;
   drawPose(overlay, null);
@@ -366,11 +366,7 @@ async function finishSession() {
     }
     writeData(progress);
   } catch (err) { console.error('Could not update dashboard progress', err); }
-  $('#done-sub').textContent = t.reps ? `${t.good} of ${t.reps} reps were good.` : 'No reps were counted this time.';
-  $('#done-list').innerHTML = summary.exercises.map((e) => `<li><span>${esc(e.name)}</span>${e.skipped
-    ? '<span class="status status--fair">Skipped</span>'
-    : allGood(e) ? `<span class="status status--good">${icon('i-check')}${e.summary.goodReps} of ${e.summary.totalReps} good</span>`
-      : `<span class="status status--fair">${icon('i-tilde')}${e.summary.goodReps} of ${e.summary.totalReps} good</span>`}</li>`).join('');
+  $('#done-results').innerHTML = resultsHtml(sessionResults(summary), esc);
   show('done');
   speak(t.reps ? `Session done! ${t.good} of ${t.reps} good reps.` : 'Session done.');
 

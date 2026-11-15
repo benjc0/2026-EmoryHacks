@@ -68,3 +68,30 @@ test('watchCall stops when the call is unknown, and gives up after maxMs', async
   const never = await watchCall('http://x', 'c1', () => {}, { fetchImpl: reply(200, { state: 'waiting', message: 'Ringing' }), sleep: async () => {}, maxMs: 0 });
   assert.equal(never, null);
 });
+
+test('progressText says where you are, in plain words', async () => {
+  const { progressText } = await import('../js/coachConnection.js');
+  assert.equal(progressText(null), '');
+  assert.equal(progressText({ phase: 'recording', exercise: 1, exercises: 2, name: 'Side arm raise', reps: 3, target: 5, good: 2 }), 'Exercise 1 of 2: Side arm raise. 3 of 5 reps, 2 good.');
+  assert.equal(progressText({ phase: 'recording', exercise: 2, exercises: 2, name: 'Mini squat', reps: 0, target: 5, good: 0 }), 'Exercise 2 of 2: Mini squat. 0 of 5 reps.');
+  assert.match(progressText({ phase: 'positioning', exercise: 1, exercises: 2, name: 'Side arm raise' }), /head to feet/);
+  assert.match(progressText({ phase: 'pain' }), /asking how you feel/);
+});
+
+test('coachProgress ignores "nothing happening"; coachLastSession never returns an earlier call', async () => {
+  const { coachProgress, coachLastSession } = await import('../js/coachConnection.js');
+  const reply = (status, body) => async () => ({ ok: status < 400, status, json: async () => body });
+  assert.equal(await coachProgress('http://x', reply(200, { phase: 'none' })), null);
+  assert.equal((await coachProgress('http://x', reply(200, { phase: 'recording' }))).phase, 'recording');
+  assert.equal(await coachProgress('http://x', async () => { throw new Error('down'); }), null);
+
+  const sleep = async () => {};
+  const old = { id: 'a', startedAt: '2026-11-14T10:00:00.000Z', endedAt: '2026-11-14T10:05:00.000Z' };
+  assert.equal(await coachLastSession('http://x', '2026-11-14T12:00:00.000Z', { fetchImpl: reply(200, old), tries: 2, sleep }), null);
+  const fresh = { id: 'b', startedAt: '2026-11-14T12:00:30.000Z', endedAt: '2026-11-14T12:04:00.000Z' };
+  assert.equal((await coachLastSession('http://x', '2026-11-14T12:00:00.000Z', { fetchImpl: reply(200, fresh), tries: 2, sleep })).id, 'b');
+  // saved a moment after hang-up: first try finds nothing, the second finds it
+  let n = 0;
+  const late = async () => (++n < 2 ? { ok: false, status: 404, json: async () => ({}) } : { ok: true, status: 200, json: async () => fresh });
+  assert.equal((await coachLastSession('http://x', '2026-11-14T12:00:00.000Z', { fetchImpl: late, tries: 3, sleep })).id, 'b');
+});

@@ -1,0 +1,12 @@
+/* Plain results after a session (js/results.js): used on the session page and in the dashboard coach dialog. */
+.res-head { font-size: var(--fs-lg); font-weight: var(--w-medium); text-align: center; margin: 0; }
+.res-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+.res-stat { display: grid; gap: 2px; justify-items: center; text-align: center; padding: var(--space-2) var(--space-1); border-radius: var(--r-tile); background: var(--tile, var(--surface)); }
+.res-stat b { font-size: var(--fs-title); line-height: 1.1; }
+.res-stat span { font-size: var(--fs-sm); color: var(--muted-on-tile, var(--muted)); }
+.res-list { list-style: none; margin: 0; padding: 0; }
+.res-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--hairline); }
+.res-line { font-weight: var(--w-medium); text-align: right; }
+.res-line--good { color: var(--good); }
+.res-line--skipped { color: var(--muted); }
+.res-tip, .res-pain { margin: 0; text-align: center; }

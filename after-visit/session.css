@@ -129,6 +129,7 @@
 .confetti > * { transform-box: fill-box; transform-origin: center; animation: drop .8s cubic-bezier(.2,.8,.3,1) both; }
 .confetti > *:nth-child(even) { animation-delay: .12s; }
 @keyframes drop { from { transform: translateY(-24px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.done-results { display: grid; gap: var(--space-3); }
 .done-list { list-style: none; margin: 0; padding: 0; }
 .done-list li { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--hairline); }
 .saved { display: flex; align-items: flex-start; justify-content: center; gap: 6px; text-align: center; color: var(--good); font-weight: var(--w-medium); min-height: 1.5em; }

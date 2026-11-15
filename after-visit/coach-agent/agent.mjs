@@ -79,6 +79,15 @@ const agent = defineAgent({
     // ---- The guided session: plan -> exercises -> reps -> pain question -> saved record.
     const coach = new CoachSession({ plan: DEMO_PLAN, say });
     let saved = false;
+    // Live progress for the dashboard ("Exercise 1 of 2: 3 of 5 reps"), rewritten only when it changes.
+    let lastLive = '';
+    const writeLive = async () => {
+      const body = JSON.stringify({ ...coach.progress(), updatedAt: Date.now() });
+      const same = JSON.stringify({ ...coach.progress() });
+      if (same === lastLive) return;
+      lastLive = same;
+      try { await mkdir(SESSIONS_DIR, { recursive: true }); await writeFile(`${SESSIONS_DIR}live.json`, body); } catch { /* progress is a bonus; never break the call */ }
+    };
     const save = async () => {
       if (saved) return;
       saved = true;
@@ -86,7 +95,10 @@ const agent = defineAgent({
       try {
         await mkdir(SESSIONS_DIR, { recursive: true });
         const file = `${SESSIONS_DIR}${record.id}.json`;
-        await writeFile(file, JSON.stringify({ source: 'facetime-coach', ...record }, null, 2));
+        const body = JSON.stringify({ source: 'facetime-coach', ...record }, null, 2);
+        await writeFile(file, body);
+        await writeFile(`${SESSIONS_DIR}latest.json`, body);          // the call service shows this on the dashboard
+        await writeLive();
         console.log(`[coach] session saved: ${file} (${record.totals.reps} reps, pain ${record.checkIn.pain ?? 'not given'})`);
       } catch (error) { console.error(`[coach] could not save the session: ${error.message}`); }
     };
@@ -149,6 +161,7 @@ const agent = defineAgent({
         const result = await pose?.track(videoFrame);
         if (!result) return;
         coach.onPose({ landmarks: result.landmarks, w: result.w, h: result.h, t: result.t });
+        writeLive();
         const phase = `${coach.idx}:${coach.phase}`;
         if (phase !== lastPhase) { lastPhase = phase; console.log(`[coach] ${coach.status()}`); }
       },
@@ -195,7 +208,7 @@ const agent = defineAgent({
 
     // Start when FaceTime is ready (bridge_ready in the room metadata): the Mac ends the call if it hears nothing
     // within 10 seconds of that. The first line is the hello plus the first exercise's instructions.
-    const stopGreeting = greetOnBridgeReady(ctx.room, () => coach.start("Hi, I'm Mend, your AI exercise coach. Let's do today's exercises together."));
+    const stopGreeting = greetOnBridgeReady(ctx.room, () => { coach.start("Hi, I'm Mend, your AI exercise coach. Let's do today's exercises together."); writeLive(); });
     ctx.addShutdownCallback(async () => stopGreeting());
   },
 });

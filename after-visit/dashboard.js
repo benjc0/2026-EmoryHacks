@@ -4,13 +4,14 @@
 // otherwise the sample plan (js/plan.js). Completed sessions are saved on this device (js/dashboardData.js).
 import { planExercises, planExercisesFromVisit } from './js/plan.js';
 import {
-  readData, writeData, localDate, weekDates, completedIds, streak,
+  readData, writeData, recordCompletion, localDate, weekDates, completedIds, streak,
   SAMPLE_CARE, greeting, exerciseHeading, weekLabels, stoneLayout,
 } from './js/dashboardData.js';
 import { exerciseArt } from './js/exerciseArt.js';
 import { esc } from './js/escapeHtml.js';
 import { visitConnection } from './js/visitConnection.js';
-import { coachUrl, coachHealth, startCall, watchCall, UNAVAILABLE } from './js/coachConnection.js';
+import { coachUrl, coachHealth, startCall, watchCall, coachProgress, coachLastSession, progressText, UNAVAILABLE } from './js/coachConnection.js';
+import { sessionResults, resultsHtml } from './js/results.js';
 import { mountVisitSearch } from './js/visitSearch.js';   // Typesense search card
 
 const $ = (s) => document.querySelector(s);
@@ -276,6 +277,7 @@ function coachView() {
       <a class="btn btn--secondary btn--lg coach-link" id="coach-browser" href="${esc(COACH)}/coach-test.html" target="_blank" rel="noopener" hidden>Talk to your coach in this browser</a>
       <button class="btn btn--ghost" type="button" data-session ${remaining().length ? '' : 'disabled'}>Start session on my own</button>
     </div>
+    <div id="coach-results" class="coach-results" hidden></div>
     <p class="fine">Your coach is an AI, not your therapist. It knows today’s plan, and nothing else about you.</p>`;
   coachHealth(COACH).then((ready) => {
     if (!$('#coach-call')) return;                       // the view was closed meanwhile
@@ -290,15 +292,50 @@ function coachStatus(text, kind = '') {
   el.className = `coach-status ${kind}`;
   el.querySelector('span').textContent = text;
 }
+let coachRecorded = null;   // id of the last coach session already added to today's progress
 async function callCoach() {
   const btn = $('#coach-call');
   btn.disabled = true;
+  $('#coach-results').hidden = true;
+  const since = new Date().toISOString();
   coachStatus('Asking your coach to call…');
   const r = await startCall(COACH);
   if (!r.ok) { coachStatus(r.message, 'err'); btn.disabled = false; return; }
   coachStatus(r.message);
-  const end = await watchCall(COACH, r.callId, (u) => coachStatus(u.message, u.state === 'ready' ? 'ok' : ''));
-  if (end?.state === 'terminal') { coachStatus(end.message); const b = document.getElementById('coach-call'); if (b) b.disabled = false; }
+
+  // While the call is on, show where you are in the session; the ringing / connecting messages show until then.
+  let live = false;
+  const timer = setInterval(async () => {
+    const text = progressText(await coachProgress(COACH));
+    if (text) { live = true; coachStatus(text, 'ok'); }
+  }, 2000);
+  const end = await watchCall(COACH, r.callId, (u) => { if (!live) coachStatus(u.message, u.state === 'ready' ? 'ok' : ''); });
+  clearInterval(timer);
+  if (end?.state !== 'terminal') return;
+
+  coachStatus('Call finished. Getting your results…');
+  const record = await coachLastSession(COACH, since);
+  const again = document.getElementById('coach-call'); if (again) again.disabled = false;
+  if (!record) { coachStatus('Call finished. Your coach did not record a session this time.'); return; }
+  showCoachResults(record);
+}
+/** Add a finished coach session to today's progress and show the simple results. */
+function showCoachResults(record) {
+  if (coachRecorded !== record.id) {
+    coachRecorded = record.id;
+    try {
+      let progress = readData();
+      for (const ex of record.exercises) {
+        if (!ex.skipped && ex.summary?.totalReps > 0) progress = recordCompletion(progress, { exercise_id: ex.id, recorded_at: record.startedAt, reps_target: ex.repsTarget, summary: ex.summary });
+      }
+      writeData(progress);
+      data = readData();
+      render();
+    } catch (err) { console.error('Could not update dashboard progress', err); }
+  }
+  coachStatus('Your session is saved.', 'ok');
+  const box = document.getElementById('coach-results');
+  if (box) { box.innerHTML = resultsHtml(sessionResults(record), esc); box.hidden = false; }
 }
 
 function route() {

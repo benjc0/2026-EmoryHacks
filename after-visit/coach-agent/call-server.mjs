@@ -2,6 +2,8 @@
 //
 //   POST /api/call-me     { "video": true }  ->  { callId, message }
 //   GET  /api/calls/<id>                     ->  { state, status, message }
+//   GET  /api/coach/progress                 ->  where the coach is in the session right now (this computer only)
+//   GET  /api/coach/last                     ->  the last finished coach session
 //   GET  /api/health                         ->  { ready, missing? }   (the page hides the button when not ready)
 //
 // Run: npm run call-server   (with npm start running the agent in another terminal)
@@ -171,6 +173,9 @@ function send(res, code, body) {
   res.end(JSON.stringify(body));
 }
 
+const SESSIONS = fileURLToPath(new URL('./sessions/', import.meta.url));
+async function readJsonFile(name) { try { return JSON.parse(await readFile(SESSIONS + name, 'utf8')); } catch { return null; } }
+
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'OPTIONS') return send(res, 204, {});
@@ -212,6 +217,16 @@ const server = http.createServer(async (req, res) => {
       if (!testRooms.has(room)) return send(res, 404, { message: 'No such test room.' });
       await rooms.updateRoomMetadata(room, bridgeReadyMetadata(room));
       return send(res, 200, { ok: true });
+    }
+
+    // What the coach is doing right now, and the result of the last call. Local only (it is health information).
+    if (req.method === 'GET' && url.pathname === '/api/coach/progress') {
+      const live = await readJsonFile('live.json');
+      return send(res, 200, live && Date.now() - (live.updatedAt ?? 0) < 120_000 ? live : { phase: 'none' });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/coach/last') {
+      const last = await readJsonFile('latest.json');
+      return send(res, last ? 200 : 404, last ?? { message: 'No coach session yet.' });
     }
 
     const match = req.method === 'GET' && url.pathname.match(/^\/api\/calls\/([0-9a-f-]{36})$/);

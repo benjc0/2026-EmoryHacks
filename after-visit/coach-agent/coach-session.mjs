@@ -115,6 +115,21 @@ export class CoachSession {
     return `Exercise ${this.idx + 1} of ${this.exercises.length}: ${ex.name} (${where}). Instructions: ${ex.instruction}`;
   }
 
+  /** Where the patient is right now, for the dashboard to show while the call is happening. */
+  progress() {
+    const ex = this.exercise;
+    const reps = (this.tracker?.reps ?? []).filter((r) => r.counted);
+    return {
+      phase: this.phase,                                  // idle | positioning | recording | pain | done
+      exercise: Math.min(this.idx + 1, this.exercises.length),
+      exercises: this.exercises.length,
+      name: ex?.name ?? null,
+      reps: reps.length,
+      target: ex?.reps ?? null,
+      good: reps.filter((r) => r.quality === 'good').length,
+    };
+  }
+
   /** The session record (same format as session.html saves). Finishes it if still open. */
   record() {
     if (this.phase !== 'done' && !this.log.endedAt) {
