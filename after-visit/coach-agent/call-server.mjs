@@ -22,7 +22,7 @@ let busy = false;
 // The coach speaks with Gemini. If Google rejects its key, the coach is silent, Chert's Mac hangs up after 10 s, and the
 // patient gets a call that fails. So "ready" includes a quick key check (cached for a minute). If we can't tell
 // (offline), we don't block.
-const UNAVAILABLE = "Your coach isn't available right now. You can still do today's session on your own.";
+const UNAVAILABLE = "Mend isn't available right now. You can still do today's session on your own.";
 let keyCheck = { at: 0, ok: true };
 async function modelKeyOk() {
   if (Date.now() - keyCheck.at < 60_000) return keyCheck.ok;
@@ -96,7 +96,7 @@ async function callMe(video) {
   await rooms.createRoom({ name: room, emptyTimeout: 120, maxParticipants: 4 });
   await dispatch.createDispatch(room, config.agentName, { metadata: JSON.stringify({ chert_outbound: true, media: { audio: true, video } }) });
   const agent = await waitForAgent(room);
-  if (!agent) { await cleanup(room); return { http: 503, body: { message: "Your coach isn't running yet. Start it and try again." } }; }
+  if (!agent) { await cleanup(room); return { http: 503, body: { message: "Mend isn't running yet. Start it and try again." } }; }
 
   const token = new AccessToken(config.livekitKey, config.livekitSecret, { identity: `chert-bridge-out-${randomUUID().slice(0, 8)}`, ttl: '30m' });
   token.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true });
@@ -202,9 +202,9 @@ const server = http.createServer(async (req, res) => {
     if (remote && url.pathname === '/api/test-room' && !remoteAllowed()) return send(res, 429, { message: 'Too many test calls. Wait a few minutes and try again.' });
 
     if (req.method === 'POST' && url.pathname === '/api/call-me') {
-      if (busy) return send(res, 409, { message: "You're already on a call with your coach." });
+      if (busy) return send(res, 409, { message: "You're already on a call with Mend." });
       if (!(await modelKeyOk())) return send(res, 503, { message: UNAVAILABLE });   // a call would connect, then fail in silence
-      if (remote && !remoteCallAllowed()) return send(res, 429, { message: 'Your coach just called. Wait 2 minutes, then try again.' });
+      if (remote && !remoteCallAllowed()) return send(res, 429, { message: 'Mend just called. Wait 2 minutes, then try again.' });
       let body = '';
       for await (const chunk of req) { body += chunk; if (body.length > 1000) break; }
       const video = (() => { try { return JSON.parse(body || '{}').video !== false; } catch { return true; } })();

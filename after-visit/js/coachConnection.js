@@ -8,7 +8,7 @@
 
 export const COACH_URL_KEY = 'mend.coachUrl';
 export const DEFAULT_COACH_URL = 'http://127.0.0.1:8787';
-export const UNAVAILABLE = "Your coach isn't available right now. You can still do today's session on your own.";
+export const UNAVAILABLE = "Mend isn't available right now. You can still do today's session on your own.";
 
 /** "https://x.trycloudflare.com/anything" -> "https://x.trycloudflare.com". Empty string if it isn't an http(s) address. */
 export function cleanUrl(value) {
@@ -70,9 +70,9 @@ export async function watchCall(base, callId, onUpdate, {
 export function progressText(p) {
   if (!p || !p.phase) return '';
   const where = p.exercises > 1 ? `Exercise ${p.exercise} of ${p.exercises}` : 'Your exercise';
-  if (p.phase === 'positioning') return `${where}: ${p.name}. Step back so your coach can see you from head to feet.`;
+  if (p.phase === 'positioning') return `${where}: ${p.name}. Step back so Mend can see you from head to feet.`;
   if (p.phase === 'recording') return `${where}: ${p.name}. ${p.reps} of ${p.target} reps${p.reps ? `, ${p.good} good` : ''}.`;
-  if (p.phase === 'pain') return 'All your exercises are done. Your coach is asking how you feel.';
+  if (p.phase === 'pain') return 'All your exercises are done. Mend is asking how you feel.';
   if (p.phase === 'done') return 'Session finished. Saving your results…';
   return '';
 }

@@ -186,7 +186,7 @@ export function welcome(exercises) {
   const each = reps.size === 1 ? `, ${[...reps][0]} reps each` : '';
   const minutes = Math.max(3, Math.round(exercises.reduce((s, e) => s + e.reps * 5 + 40, 0) / 60));
   const count = exercises.length === 1 ? 'one exercise' : `${exercises.length} exercises`;
-  return `Hi, I'm Mend, your AI exercise coach. Today we'll do ${count}: ${list}${each}. It takes about ${minutes} minutes, and I'll guide you through every step.`;
+  return `Hi, I'm Mend, your AI exercise guide. Today we'll do ${count}: ${list}${each}. It takes about ${minutes} minutes, and I'll guide you through every step.`;
 }
 
 /** What to say before an exercise. Precise mode gives the target in degrees; simple mode gives no numbers. */

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1620" />
-  <title>Talk to your coach | Mend</title>
+  <title>Talk to Mend</title>
   <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="results.css" />
   <style>
@@ -53,7 +53,7 @@
   </style>
 </head>
 <body>
-  <main class="call" aria-label="Call with your coach">
+  <main class="call" aria-label="Call with Mend">
     <video class="me" id="meVideo" autoplay playsinline muted></video>
     <div class="shade" aria-hidden="true"></div>
 
@@ -63,9 +63,9 @@
     </div>
 
     <div class="pip" id="pip" hidden>
-      <div class="empty" id="coachEmpty">Your coach joins here</div>
+      <div class="empty" id="coachEmpty">Mend joins here</div>
       <video id="coachVideo" autoplay playsinline hidden></video>
-      <span class="label">Coach</span>
+      <span class="label">Mend</span>
     </div>
 
     <div class="controls" id="controls" hidden>
@@ -76,8 +76,8 @@
     <!-- Before the call -->
     <section class="veil" id="intro">
       <div class="card">
-        <h1>Talk to your coach</h1>
-        <p class="muted">Your coach sees you through your camera, talks you through today's exercises and counts your reps out loud.</p>
+        <h1>Talk to Mend</h1>
+        <p class="muted">Mend, your AI exercise guide, sees you through your camera, talks you through today's exercises and counts your reps out loud.</p>
         <div class="stand" id="standArt"></div>
         <p><b>Stand about 6 feet (2 m) from the screen, or 3 big steps,</b> so the camera sees you from head to feet.</p>
         <p class="muted" id="introStatus" role="status" aria-live="polite"></p>
@@ -85,7 +85,7 @@
           <button class="btn btn--accent btn--lg" id="start" type="button">Start talking</button>
           <button class="btn btn--dark" id="done0" type="button">Not now</button>
         </div>
-        <p class="muted">Your camera and microphone are shared with the AI coach during the call. Your coach is an AI, not your therapist.</p>
+        <p class="muted">Your camera and microphone are shared with Mend, an AI, during the call. Mend is not your therapist.</p>
       </div>
     </section>
 
@@ -95,7 +95,7 @@
         <h1 id="afterTitle">Call finished</h1>
         <div id="afterResults" class="stack-btns"></div>
         <div class="stack-btns">
-          <button class="btn btn--accent btn--lg" id="again" type="button">Talk to your coach again</button>
+          <button class="btn btn--accent btn--lg" id="again" type="button">Talk to Mend again</button>
           <button class="btn btn--dark" id="done1" type="button">Done</button>
         </div>
       </div>
@@ -140,7 +140,7 @@
       if (!coach) return;
       greeted = true;
       await post('/api/test-room/ready', { room: testRoom });
-      status('Your coach is starting. Listen for the first instructions.');
+      status('Mend is starting. Listen for the first instructions.');
     }
 
     // Where you are in the session, live (the coach writes it as it counts your reps).
@@ -160,7 +160,7 @@
 
     $('start').addEventListener('click', async () => {
       $('start').disabled = true;
-      intro('Starting your coach…');
+      intro('Starting Mend…');
       since = new Date().toISOString();
       try {
         const { livekitUrl, token, room: name } = await post('/api/test-room');
@@ -176,7 +176,7 @@
         if (cam) cam.attach($('meVideo'));
         await room.startAudio();
         inCall(true);
-        status('Waiting for your coach to join…');
+        status('Waiting for Mend to join…');
         followProgress();
         await greetWhenCoachIsHere();
       } catch (err) {
@@ -209,7 +209,7 @@
         $('afterTitle').textContent = 'Session done!';
         $('afterResults').innerHTML = resultsHtml(sessionResults(record), esc);
       } else {
-        $('afterResults').innerHTML = '<p class="muted">Your coach did not record a session this time.</p>';
+        $('afterResults').innerHTML = '<p class="muted">Mend did not record a session this time.</p>';
       }
     }
 

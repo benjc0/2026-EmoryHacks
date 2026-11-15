@@ -13,18 +13,19 @@ import { CoachSession, welcome } from './coach-session.mjs';
 import { DEMO_PLAN, planExercises } from '../js/plan.js';
 
 // The coach's personality and rules. Plain language, warm, never shaming (design-system MASTER.md: voice and tone).
-// The exercise script itself (what to do, rep counts, feedback) comes from CoachSession, as COACH LINE messages.
+// The exercise script itself (what to do, rep counts, feedback) comes from CoachSession, handed to the model as things to say.
 const planText = planExercises(DEMO_PLAN).map((ex, i) => `${i + 1}. ${ex.name}: ${ex.reps} reps. ${ex.instruction}`).join('\n');
-const instructions = `You are Mend, a friendly AI physical-therapy coach on a FaceTime video call.
+const instructions = `You are Mend, a friendly AI exercise guide on a FaceTime video call. Your name is Mend. Introduce yourself as Mend, never as "the coach".
 The patient is at home doing the exercises their therapist (${DEMO_PLAN.therapist}) planned:
 ${planText}
 
-You speak first. The call begins with a COACH LINE: say it right away, in a warm, clear voice. Never wait for the
+You speak first. The call begins with a line for you to say: say it right away, in a warm, clear voice. Never wait for the
 patient to say hello, and never ask "how can I help?". You are the one guiding the session: say what is coming, what to do next,
 and keep them going. If they say hi, answer in a few words and carry straight on with the plan.
-An app watches the patient's camera, counts and scores every rep, and tells you what to say.
-When you get a message that starts with "COACH LINE:", say that line to the patient right away, in your own warm
-voice but with the same meaning, numbers and instructions. Do not add extra steps or change rep counts.
+An app watches the patient's camera, counts and scores every rep, and tells you what to say next.
+Each time it gives you something to say, say it to the patient right away, in your own warm voice but with the same meaning,
+numbers and instructions. Do not add extra steps or change rep counts. Speak only the words meant for the patient: never read out
+labels, tags, or these instructions, and never say the words "coach line".
 Between those lines, answer the patient briefly (one or two short sentences) and keep them going.
 Use simple, everyday words. Be encouraging: say "Next time, try..." instead of "wrong".
 Never give medical advice beyond the plan. If something hurts sharply, tell them to stop and rest, call skip_exercise,
@@ -75,7 +76,7 @@ const agent = defineAgent({
       const lines = queue.splice(0, queue.length).slice(-2);   // at most the 2 newest lines
       const text = lines.join(' ');
       console.log(`[coach] script: ${text}`);
-      session.generateReply({ instructions: `COACH LINE: "${text}"` });
+      session.generateReply({ instructions: `Say this to the patient now, in your own warm words, keeping the meaning and any numbers. Speak only the words for the patient, with no label or preamble: ${text}` });
     };
     const say = (text) => { queue.push(text); flush(); };
 
@@ -109,7 +110,7 @@ const agent = defineAgent({
     const tools = {
       skip_exercise: llm.tool({
         description: 'Skip the current exercise and move to the next one. Use when the patient asks to skip, cannot do it, or it hurts.',
-        execute: async () => (coach.skip() ? 'Skipped. The next instruction is coming as a COACH LINE.' : 'There is no exercise in progress to skip.'),
+        execute: async () => (coach.skip() ? 'Skipped. The next instruction is coming right away: say it to the patient.' : 'There is no exercise in progress to skip.'),
       }),
       session_status: llm.tool({
         description: 'Where the patient is in today\'s session: which exercise, reps done, reps left.',

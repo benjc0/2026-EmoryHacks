@@ -85,7 +85,7 @@ export function findAgent(participants) {
 
 /** Plain-language status for the patient's screen. Never says "error" or a code. */
 export function patientMessage(state, status) {
-  if (state === 'ready') return 'Your coach is on the line.';
+  if (state === 'ready') return 'Mend is on the line.';
   if (state === 'terminal') return status === 'ended' ? 'Call ended. Nice work today.' : "The call didn't go through. Try again in a minute.";
   return 'Calling your iPhone now. Pick up on FaceTime.';
 }

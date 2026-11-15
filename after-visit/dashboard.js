@@ -267,21 +267,21 @@ function helpView() {
 // Train with your AI coach: the coach calls the patient on FaceTime and talks them through today's plan.
 function coachView() {
   $('#detail').className = '';
-  $('#detail-title').textContent = 'Train with your coach';
-  $('#detail-sub').textContent = 'Your AI coach talks you through today’s exercises and counts your reps out loud.';
+  $('#detail-title').textContent = 'Train with Mend';
+  $('#detail-sub').textContent = 'Mend, your AI coach, talks you through today’s exercises and counts your reps out loud.';
   $('#detail-body').innerHTML = `
-    <ol class="coach-steps"><li>Prop your phone up so your coach can see you from your head to your hips.</li><li>Tap <b>Call my iPhone</b> and answer the FaceTime call.</li><li>Follow along. Your coach tells you how each rep went.</li></ol>
-    <div class="coach-status" id="coach-status" role="status" aria-live="polite">${icon('phone', 'icon icon--sm')}<span>Checking that your coach is ready…</span></div>
+    <ol class="coach-steps"><li>Prop your phone up so Mend can see you from your head to your hips.</li><li>Tap <b>Call my iPhone</b> and answer the FaceTime call.</li><li>Follow along. Mend tells you how each rep went.</li></ol>
+    <div class="coach-status" id="coach-status" role="status" aria-live="polite">${icon('phone', 'icon icon--sm')}<span>Checking that Mend is ready…</span></div>
     <div class="coach-actions">
       <button class="btn btn--accent btn--lg" type="button" id="coach-call" data-call disabled>Call my iPhone</button>
-      <a class="btn btn--secondary btn--lg coach-link" id="coach-browser" href="${esc(COACH)}/coach-test.html" target="_blank" rel="noopener" hidden>Talk to your coach in this browser</a>
+      <a class="btn btn--secondary btn--lg coach-link" id="coach-browser" href="${esc(COACH)}/coach-test.html" target="_blank" rel="noopener" hidden>Talk to Mend in this browser</a>
       <button class="btn btn--ghost" type="button" data-session ${remaining().length ? '' : 'disabled'}>Start session on my own</button>
     </div>
     <div id="coach-results" class="coach-results" hidden></div>
-    <p class="fine">Your coach is an AI, not your therapist. It knows today’s plan, and nothing else about you.</p>`;
+    <p class="fine">Mend is an AI, not your therapist. It knows today’s plan, and nothing else about you.</p>`;
   coachHealth(COACH).then((ready) => {
     if (!$('#coach-call')) return;                       // the view was closed meanwhile
-    coachStatus(ready ? 'Your coach is ready. Tap Call my iPhone when you are.' : UNAVAILABLE, ready ? 'ok' : 'err');
+    coachStatus(ready ? 'Mend is ready. Tap Call my iPhone when you are.' : UNAVAILABLE, ready ? 'ok' : 'err');
     $('#coach-call').disabled = !ready;
     $('#coach-browser').hidden = !ready;
   });
@@ -298,7 +298,7 @@ async function callCoach() {
   btn.disabled = true;
   $('#coach-results').hidden = true;
   const since = new Date().toISOString();
-  coachStatus('Asking your coach to call…');
+  coachStatus('Asking Mend to call…');
   const r = await startCall(COACH);
   if (!r.ok) { coachStatus(r.message, 'err'); btn.disabled = false; return; }
   coachStatus(r.message);
@@ -316,7 +316,7 @@ async function callCoach() {
   coachStatus('Call finished. Getting your results…');
   const record = await coachLastSession(COACH, since);
   const again = document.getElementById('coach-call'); if (again) again.disabled = false;
-  if (!record) { coachStatus('Call finished. Your coach did not record a session this time.'); return; }
+  if (!record) { coachStatus('Call finished. Mend did not record a session this time.'); return; }
   showCoachResults(record);
 }
 /** Add a finished coach session to today's progress and show the simple results. */

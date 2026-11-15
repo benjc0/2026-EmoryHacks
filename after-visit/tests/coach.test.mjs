@@ -119,7 +119,7 @@ test('rushed reps are not counted, the coach says why, and they cannot finish th
 
 test('the coach speaks first: it says who it is, what today is and how long it takes', () => {
   const text = welcome(planExercises());
-  assert.match(text, /^Hi, I'm Mend, your AI exercise coach\./);
+  assert.match(text, /^Hi, I'm Mend, your AI exercise guide\./);
   assert.match(text, /2 exercises: side arm raise and mini squat, 5 reps each/);
   assert.match(text, /about \d+ minutes/);
   const { coach, lines } = coachWithLines();
