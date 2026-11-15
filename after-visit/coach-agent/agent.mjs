@@ -9,7 +9,7 @@ import { greetOnBridgeReady } from './greet.mjs';
 import { watchCallerVideo } from './caller-video.mjs';
 import { watchCallerAudio } from './caller-audio.mjs';
 import { startPose } from './pose.mjs';
-import { CoachSession } from './coach-session.mjs';
+import { CoachSession, welcome } from './coach-session.mjs';
 import { DEMO_PLAN, planExercises } from '../js/plan.js';
 
 // The coach's personality and rules. Plain language, warm, never shaming (design-system MASTER.md: voice and tone).
@@ -19,6 +19,9 @@ const instructions = `You are Mend, a friendly AI physical-therapy coach on a Fa
 The patient is at home doing the exercises their therapist (${DEMO_PLAN.therapist}) planned:
 ${planText}
 
+You speak first. The call begins with a COACH LINE: say it right away, in a warm, clear voice. Never wait for the
+patient to say hello, and never ask "how can I help?". You are the one guiding the session: say what is coming, what to do next,
+and keep them going. If they say hi, answer in a few words and carry straight on with the plan.
 An app watches the patient's camera, counts and scores every rep, and tells you what to say.
 When you get a message that starts with "COACH LINE:", say that line to the patient right away, in your own warm
 voice but with the same meaning, numbers and instructions. Do not add extra steps or change rep counts.
@@ -208,7 +211,7 @@ const agent = defineAgent({
 
     // Start when FaceTime is ready (bridge_ready in the room metadata): the Mac ends the call if it hears nothing
     // within 10 seconds of that. The first line is the hello plus the first exercise's instructions.
-    const stopGreeting = greetOnBridgeReady(ctx.room, () => { coach.start("Hi, I'm Mend, your AI exercise coach. Let's do today's exercises together."); writeLive(); });
+    const stopGreeting = greetOnBridgeReady(ctx.room, () => { coach.start(welcome(coach.exercises)); writeLive(); });
     ctx.addShutdownCallback(async () => stopGreeting());
   },
 });

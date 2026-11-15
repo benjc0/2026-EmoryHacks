@@ -140,7 +140,7 @@
       if (!coach) return;
       greeted = true;
       await post('/api/test-room/ready', { room: testRoom });
-      status('Your coach is on the line. Say hello.');
+      status('Your coach is starting. Listen for the first instructions.');
     }
 
     // Where you are in the session, live (the coach writes it as it counts your reps).

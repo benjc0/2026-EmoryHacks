@@ -12,7 +12,8 @@ import { ExerciseTracker } from '../js/exerciseTracker.js';
 import { SessionLog } from '../js/sessionLog.js';
 
 const IN_VIEW_MS = 1500;      // in view this long before counting starts (session.html uses the same)
-const CUE_EVERY_MS = 12000;   // don't repeat a "step back" cue more often than this
+const CUE_EVERY_MS = 9000;    // don't repeat a "step back" cue more often than this
+const NUDGE_MS = 15000;      // recording but nothing happening this long -> a friendly nudge to begin or carry on
 const LOST_MS = 6000;         // out of view this long while recording -> ask them to step back into view
 
 export class CoachSession {
@@ -52,6 +53,7 @@ export class CoachSession {
           tr.startRecording(t);
           this.phase = 'recording';
           this.lostSince = null;
+          this.lastActivity = t;
           this.say(`I can see you. Go ahead: ${ex.reps} reps, nice and slow.`);
         }
       } else {
@@ -67,7 +69,14 @@ export class CoachSession {
       if (t - this.lostSince >= LOST_MS && t - this.lastCue >= CUE_EVERY_MS) { this.lastCue = t; this.say(positionCue(ex, !!landmarks)); }
     } else this.lostSince = null;
 
+    // Stay on top of things: if nothing has happened for a while, nudge instead of waiting in silence.
+    if (r.visible && t - (this.lastActivity ?? t) >= NUDGE_MS && t - this.lastCue >= NUDGE_MS) {
+      this.lastCue = t;
+      this.say(tr.counted === 0 ? `Whenever you're ready, start your first rep. ${ex.instruction}` : "Take your time. Start your next rep whenever you're ready.");
+    }
+
     for (const ev of r.events) {
+      this.lastActivity = t;
       if (ev.type !== 'rep') continue;
       if (!ev.rep.counted) {   // rushed or out of view: it doesn't count, so say why
         this.say(ev.rep.notCounted === 'hidden' ? 'Stay in the picture so I can count that one.' : 'That was too fast to count. Slow down.');
@@ -167,6 +176,17 @@ export class CoachSession {
     const result = t.reps ? `That's all your exercises. ${t.good} of ${t.reps} good reps today.` : "That's all your exercises.";
     this.say([lead, result, 'On a scale of 0 to 10, how much pain did you feel today?'].filter(Boolean).join(' '));
   }
+}
+
+/** The first thing the coach says: who it is, what today's session is, and how long it takes. Said before the first exercise's instructions. */
+export function welcome(exercises) {
+  const names = exercises.map((e) => e.name.toLowerCase());
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0] || 'your exercises';
+  const reps = new Set(exercises.map((e) => e.reps));
+  const each = reps.size === 1 ? `, ${[...reps][0]} reps each` : '';
+  const minutes = Math.max(3, Math.round(exercises.reduce((s, e) => s + e.reps * 5 + 40, 0) / 60));
+  const count = exercises.length === 1 ? 'one exercise' : `${exercises.length} exercises`;
+  return `Hi, I'm Mend, your AI exercise coach. Today we'll do ${count}: ${list}${each}. It takes about ${minutes} minutes, and I'll guide you through every step.`;
 }
 
 /** What to say before an exercise. Precise mode gives the target in degrees; simple mode gives no numbers. */

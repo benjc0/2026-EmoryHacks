@@ -1,7 +1,7 @@
 // The FaceTime coach's guided session, end to end with the synthetic person.  Run: npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CoachSession, intro, positionCue } from '../coach-agent/coach-session.mjs';
+import { CoachSession, intro, positionCue, welcome } from '../coach-agent/coach-session.mjs';
 import { planExercises } from '../js/plan.js';
 import { demoMotion, person } from './fakePerson.mjs';
 
@@ -115,4 +115,26 @@ test('rushed reps are not counted, the coach says why, and they cannot finish th
   assert.equal(coach.tracker.counted, 0);
   assert.ok(lines.some((l) => /too fast to count/.test(l)), lines.join(' | '));
   assert.match(coach.status(), /0 of 5 reps done/);
+});
+
+test('the coach speaks first: it says who it is, what today is and how long it takes', () => {
+  const text = welcome(planExercises());
+  assert.match(text, /^Hi, I'm Mend, your AI exercise coach\./);
+  assert.match(text, /2 exercises: side arm raise and mini squat, 5 reps each/);
+  assert.match(text, /about \d+ minutes/);
+  const { coach, lines } = coachWithLines();
+  coach.start(text);
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /First: side arm raise\..*stand about 6 feet/);
+});
+
+test('it keeps guiding: a nudge when you are in view but have not started, and again if you stop', () => {
+  const { coach, lines } = coachWithLines();
+  coach.start();
+  let t = play(coach, 0, 2000);                                      // in view, recording begins
+  t = play(coach, t + 100, 17000, () => person());                  // standing still for 17 s
+  assert.ok(lines.some((l) => /^Whenever you're ready, start your first rep\./.test(l)), lines.join(' | '));
+  const before = lines.length;
+  t = play(coach, t + 100, 5000, () => person());                   // not repeated straight away
+  assert.equal(lines.length, before);
 });
