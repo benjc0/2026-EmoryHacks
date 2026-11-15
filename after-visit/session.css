@@ -63,8 +63,12 @@
 .countdown { position: absolute; inset: 0; display: grid; place-items: center; font-size: 96px; font-weight: var(--w-light);
              text-shadow: 0 2px 16px rgb(0 0 0 / .7); }
 
-.setup { position: absolute; left: var(--space-3); right: var(--space-3); bottom: var(--space-3); max-width: 520px; margin: 0 auto;
-         background: rgb(11 22 32 / .92); border-radius: var(--r-tile); padding: var(--space-3) var(--space-4); display: grid; gap: var(--space-2); }
+/* While we wait for you to get in frame, the camera is blurred and dimmed so it is clear nothing else can be used yet. */
+.setup { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-3);
+         background: rgb(11 22 32 / .45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.setup[hidden] { display: none; }
+.setup__card { width: 100%; max-width: 520px; background: rgb(11 22 32 / .92); border-radius: var(--r-tile);
+               padding: var(--space-3) var(--space-4); display: grid; gap: var(--space-2); }
 .setup__text { font-size: var(--fs-lg); }
 .frame-check { font-weight: var(--w-medium); color: #F3CB6B; }
 .frame-check.ok { color: #A9E2C6; }
