@@ -6,11 +6,14 @@ export function visitConnection(href, storage) {
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   const standalone = local && !url.pathname.startsWith('/pt/');
   const fallback = standalone ? `${url.protocol}//${url.hostname}:${url.port === '8000' ? '8001' : '8000'}` : '';
+  // The public site (e.g. mending.fit) is only the dashboard. With no visit server chosen, send the
+  // visit button to the Visit Copilot running on this computer, not back to the dashboard itself.
+  const hosted = !local && !url.pathname.startsWith('/pt/');
   const explicitVisit = params.get('visit_url') || get('visitCopilot.visitUrl');
   const server = (params.get('server') ?? get('visitCopilot.server') ?? (explicitVisit ? new URL(explicitVisit, url).origin : fallback)).replace(/\/$/, '');
   const patientId = params.get('patient_id') || get('visitCopilot.patientId') || 'demo-patient';
   if (params.has('patient_id')) set('visitCopilot.patientId', patientId);
   if (params.has('server')) set('visitCopilot.server', server);
   if (params.has('visit_url')) set('visitCopilot.visitUrl', explicitVisit);
-  return { patientId, server, visitUrl: explicitVisit || `${server}/`, api: `${server}/api/patients/${encodeURIComponent(patientId)}` };
+  return { patientId, server, visitUrl: explicitVisit || (hosted && !server ? 'http://localhost:8000/' : `${server}/`), api: `${server}/api/patients/${encodeURIComponent(patientId)}` };
 }

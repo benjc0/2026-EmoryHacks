@@ -47,3 +47,8 @@ test('session log exercise totals update dashboard completion without counting p
   data = recordCompletion(data, { exercise_id: 'mini-squat', recorded_at, reps_target: 5, summary: { totalReps: 5 } });
   assert.ok(completedIds(data, localDate()).has('mini-squat'));
 });
+
+test('the public site sends the visit button to the Visit Copilot on this computer', () => {
+  const c = visitConnection('https://mending.fit/');
+  assert.equal(c.visitUrl, 'http://localhost:8000/');
+});
