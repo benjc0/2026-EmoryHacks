@@ -2,7 +2,7 @@
 //
 //   POST /api/call-me     { "video": true }  ->  { callId, message }
 //   GET  /api/calls/<id>                     ->  { state, status, message }
-//   GET  /api/coach/progress                 ->  where the coach is in the session right now (this computer only)
+//   GET  /api/coach/progress                 ->  where the coach is in the session right now (rep counts only; works through a tunnel too)
 //   GET  /api/coach/last                     ->  the last finished coach session
 //   GET  /api/health                         ->  { ready, missing? }   (the page hides the button when not ready)
 //
@@ -118,7 +118,13 @@ async function callMe(video) {
 
 // The test page is served here too, so one https tunnel (cloudflared) covers the page and its API for a phone.
 // Only these files, nothing else from the folder.
-const PAGES = { '/coach-test.html': ['coach-test.html', 'text/html; charset=utf-8'], '/tokens.css': ['tokens.css', 'text/css; charset=utf-8'] };
+const JS = 'text/javascript; charset=utf-8', CSS = 'text/css; charset=utf-8';
+const PAGES = {
+  '/coach-test.html': ['coach-test.html', 'text/html; charset=utf-8'],
+  '/tokens.css': ['tokens.css', CSS], '/results.css': ['results.css', CSS],
+  '/js/coachConnection.js': ['js/coachConnection.js', JS], '/js/results.js': ['js/results.js', JS],
+  '/js/standGuide.js': ['js/standGuide.js', JS], '/js/escapeHtml.js': ['js/escapeHtml.js', JS],
+};
 const afterVisit = (name) => fileURLToPath(new URL(`../${name}`, import.meta.url));
 
 // A request that came through a tunnel (or anything not this computer) is "remote". Remote requests may use the
@@ -191,7 +197,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, remote ? { ready: Boolean(config) && keyOk } : config ? { ready: keyOk, ...(keyOk ? {} : { problem: 'gemini_key_rejected' }) } : { ready: false, missing });
     }
     if (!config) return send(res, 503, { message: 'The call service is not set up yet.' });
-    const remoteOk = url.pathname.startsWith('/api/test-room') || url.pathname === '/api/call-me' || url.pathname.startsWith('/api/calls/');
+    const remoteOk = url.pathname.startsWith('/api/test-room') || url.pathname === '/api/call-me' || url.pathname.startsWith('/api/calls/') || url.pathname.startsWith('/api/coach/');
     if (remote && !remoteOk) return send(res, 403, { message: 'Not available from here.' });
     if (remote && url.pathname === '/api/test-room' && !remoteAllowed()) return send(res, 429, { message: 'Too many test calls. Wait a few minutes and try again.' });
 
@@ -219,7 +225,8 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
 
-    // What the coach is doing right now, and the result of the last call. Local only (it is health information).
+    // What the coach is doing right now, and the result of the last call. Reachable through your own tunnel too, so a
+    // phone can see its results; the tunnel address is only known to you.
     if (req.method === 'GET' && url.pathname === '/api/coach/progress') {
       const live = await readJsonFile('live.json');
       return send(res, 200, live && Date.now() - (live.updatedAt ?? 0) < 120_000 ? live : { phase: 'none' });

@@ -3,63 +3,123 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#F4F0E2" />
+  <meta name="theme-color" content="#0b1620" />
   <title>Talk to your coach | Mend</title>
   <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="results.css" />
   <style>
-    .stage { display: grid; gap: var(--space-3); grid-template-columns: 1fr 1fr; }
-    @media (max-width: 520px) { .stage { grid-template-columns: 1fr; } }
-    .feed { position: relative; aspect-ratio: 4 / 3; border-radius: var(--r-tile); overflow: hidden; background: var(--tile); border: 1px solid var(--hairline); }
-    .feed video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .feed--me video { transform: scaleX(-1); }
-    .feed .label { position: absolute; left: var(--space-2); bottom: var(--space-2); background: var(--surface); color: var(--fg); padding: 2px var(--space-2); border-radius: var(--r-pill); font-size: var(--fs-sm); }
-    .feed .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted-on-tile); text-align: center; padding: var(--space-3); }
-    .say { min-height: 1.6em; }
+    /* Always dark, like the exercise screen: your camera fills the whole screen, the coach sits in a corner. */
+    html, body { height: 100%; margin: 0; background: #0b1620; color: #fff; overflow: hidden; }
+    .call { position: fixed; inset: 0; --focus: #A6C8E2; }
+    .me { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); background: #0b1620; }
+    .shade { position: absolute; inset: 0; pointer-events: none;
+             background: linear-gradient(to bottom, rgb(11 22 32 / .75), transparent 22%, transparent 70%, rgb(11 22 32 / .8)); }
+
+    .top { position: absolute; left: var(--space-3); right: var(--space-3); top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+           display: grid; gap: var(--space-1); justify-items: start; max-width: calc(100% - 150px); }
+    .pill { margin: 0; padding: var(--space-1) var(--space-3); border-radius: var(--r-pill); background: rgb(11 22 32 / .78); font-size: var(--fs-body); line-height: 1.35; }
+    .pill--progress { background: #1F4436; color: #A9E2C6; font-weight: var(--w-medium); }
+
+    .pip { position: absolute; right: var(--space-3); top: calc(var(--space-3) + env(safe-area-inset-top, 0px)); width: clamp(110px, 22vw, 200px); aspect-ratio: 3 / 4;
+           border-radius: var(--r-tile); overflow: hidden; background: #13293a; border: 2px solid #23384a; }
+    .pip video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pip .empty { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-1); text-align: center; color: #C5CFD6; font-size: var(--fs-sm); }
+    .pip .label { position: absolute; left: var(--space-1); bottom: var(--space-1); padding: 0 var(--space-1); border-radius: var(--r-pill); background: rgb(11 22 32 / .78); font-size: var(--fs-sm); }
+
+    .controls { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: var(--space-2);
+                padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+    .controls .btn { width: auto; min-width: 140px; }
+    .btn--dark { background: #23384a; color: #fff; border-color: #6F8DA5; }
+    .btn--end { background: #FFB4A2; color: #101F2B; border-color: transparent; }
+    @media (hover: hover) { .btn--dark:hover { border-color: #fff; } }
+
+    /* Cards (before the call, and the results after): centred over a blurred, dimmed background. */
+    .veil { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-3); overflow-y: auto;
+            background: rgb(11 22 32 / .55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+    .veil[hidden], [hidden] { display: none !important; }
+    .card { width: 100%; max-width: 460px; background: #1A2F40; color: #fff; border-radius: var(--r-hero); padding: var(--space-4); display: grid; gap: var(--space-3); margin: auto; }
+    .card h1 { font-size: var(--fs-page); margin: 0; font-weight: var(--w-regular); }
+    .card p { margin: 0; }
+    .card .muted { color: #C5CFD6; }
+    .card .stand { color: #fff; --accent-ink: #A9E2C6; }
+    .stand__svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; }
+    .card .res-stat { background: #23384a; }
+    .card .res-stat span { color: #C5CFD6; }
+    .card .res-row { border-color: #23384a; }
+    .card .res-line--good { color: #A9E2C6; }
+    .card .res-line--skipped { color: #C5CFD6; }
+    .card .btn { width: 100%; }
+    .stack-btns { display: grid; gap: var(--space-2); }
   </style>
 </head>
 <body>
-  <main class="page">
-    <a class="btn btn--ghost" href="session.html">Back to session options</a>
-    <header class="stack">
-      <h1>Talk to your coach</h1>
-      <p class="muted">Get a FaceTime call from your coach, or talk right here in the browser.</p>
-    </header>
+  <main class="call" aria-label="Call with your coach">
+    <video class="me" id="meVideo" autoplay playsinline muted></video>
+    <div class="shade" aria-hidden="true"></div>
 
-    <section class="stage" aria-label="Video">
-      <div class="feed">
-        <div class="empty" id="coachEmpty">Your coach appears here</div>
-        <video id="coachVideo" autoplay playsinline hidden></video>
-        <span class="label">Coach</span>
-      </div>
-      <div class="feed feed--me">
-        <div class="empty" id="meEmpty">You appear here</div>
-        <video id="meVideo" autoplay playsinline muted hidden></video>
-        <span class="label">You</span>
+    <div class="top">
+      <p class="pill" id="status" role="status" aria-live="polite" hidden></p>
+      <p class="pill pill--progress" id="progress" role="status" aria-live="polite" hidden></p>
+    </div>
+
+    <div class="pip" id="pip" hidden>
+      <div class="empty" id="coachEmpty">Your coach joins here</div>
+      <video id="coachVideo" autoplay playsinline hidden></video>
+      <span class="label">Coach</span>
+    </div>
+
+    <div class="controls" id="controls" hidden>
+      <button class="btn btn--dark" id="mute" type="button" aria-pressed="false">Mute</button>
+      <button class="btn btn--end" id="end" type="button">End call</button>
+    </div>
+
+    <!-- Before the call -->
+    <section class="veil" id="intro">
+      <div class="card">
+        <h1>Talk to your coach</h1>
+        <p class="muted">Your coach sees you through your camera, talks you through today's exercises and counts your reps out loud.</p>
+        <div class="stand" id="standArt"></div>
+        <p><b>Stand about 6 feet (2 m) from the screen, or 3 big steps,</b> so the camera sees you from head to feet.</p>
+        <p class="muted" id="introStatus" role="status" aria-live="polite"></p>
+        <div class="stack-btns">
+          <button class="btn btn--accent btn--lg" id="start" type="button">Start talking</button>
+          <button class="btn btn--dark" id="done0" type="button">Not now</button>
+        </div>
+        <p class="muted">Your camera and microphone are shared with the AI coach during the call. Your coach is an AI, not your therapist.</p>
       </div>
     </section>
 
-    <p class="say" id="status" role="status" aria-live="polite">Choose how to talk to your coach.</p>
-
-    <div class="stack">
-      <button class="btn btn--accent btn--lg" id="callMe" type="button">Have my coach call my iPhone</button>
-      <button class="btn btn--secondary btn--lg" id="start" type="button">Talk here in the browser</button>
-      <button class="btn btn--secondary btn--lg" id="end" type="button" hidden>End call</button>
-    </div>
-    <p class="fine" id="callHint">Your iPhone rings with a FaceTime call in a few seconds. Prop it up so your arms are in view, then answer.</p>
-    <p class="fine">Your camera and microphone are shared with the AI coach during your call.</p>
+    <!-- After the call -->
+    <section class="veil" id="after" hidden>
+      <div class="card">
+        <h1 id="afterTitle">Call finished</h1>
+        <div id="afterResults" class="stack-btns"></div>
+        <div class="stack-btns">
+          <button class="btn btn--accent btn--lg" id="again" type="button">Talk to your coach again</button>
+          <button class="btn btn--dark" id="done1" type="button">Done</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script type="module">
     import { Room, RoomEvent, Track } from 'https://cdn.jsdelivr.net/npm/livekit-client@2.22.4/+esm';
+    import { coachProgress, coachLastSession, progressText } from './js/coachConnection.js';
+    import { sessionResults, resultsHtml } from './js/results.js';
+    import { standGuide } from './js/standGuide.js';
+    import { esc } from './js/escapeHtml.js';
 
     // Served by the call service itself (http://127.0.0.1:8787 or a https tunnel to it): same address.
     // Served from the after-visit web server on :8000: talk to the call service on this computer.
     const API = location.port === '8000' ? 'http://127.0.0.1:8787' : '';
     const $ = (id) => document.getElementById(id);
-    const say = (text) => { $('status').textContent = text; };
+    $('standArt').innerHTML = standGuide();
     const audioBox = document.createElement('div');
     audioBox.hidden = true; document.body.append(audioBox);
-    let room, testRoom, greeted = false;
+    let room, testRoom, greeted = false, since = '', progressTimer = null, muted = false;
+
+    const status = (text) => { $('status').textContent = text; $('status').hidden = !text; };
+    const intro = (text) => { $('introStatus').textContent = text; };
 
     async function post(path, body) {
       const r = await fetch(API + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
@@ -80,66 +140,96 @@
       if (!coach) return;
       greeted = true;
       await post('/api/test-room/ready', { room: testRoom });
-      say('Your coach is on the line. Say hello.');
+      status('Your coach is on the line. Say hello.');
+    }
+
+    // Where you are in the session, live (the coach writes it as it counts your reps).
+    function followProgress() {
+      clearInterval(progressTimer);
+      progressTimer = setInterval(async () => {
+        const text = progressText(await coachProgress(API));
+        $('progress').textContent = text; $('progress').hidden = !text;
+      }, 2000);
+    }
+
+    function inCall(on) {
+      $('intro').hidden = on; $('after').hidden = true;
+      $('pip').hidden = !on; $('controls').hidden = !on;
+      if (!on) { $('progress').hidden = true; status(''); }
     }
 
     $('start').addEventListener('click', async () => {
       $('start').disabled = true;
-      say('Starting your coach…');
+      intro('Starting your coach…');
+      since = new Date().toISOString();
       try {
         const { livekitUrl, token, room: name } = await post('/api/test-room');
         testRoom = name;
         room = new Room({ adaptiveStream: true, dynacast: true });
         room.on(RoomEvent.TrackSubscribed, (track) => showCoach(track));
         room.on(RoomEvent.ParticipantConnected, () => greetWhenCoachIsHere());
-        room.on(RoomEvent.Disconnected, () => { say('Call ended.'); reset(); });
+        room.on(RoomEvent.Disconnected, () => finish());
         await room.connect(livekitUrl, token);
         await room.localParticipant.setMicrophoneEnabled(true);
         await room.localParticipant.setCameraEnabled(true);
         const cam = room.localParticipant.getTrackPublication(Track.Source.Camera)?.track;
-        if (cam) { cam.attach($('meVideo')); $('meVideo').hidden = false; $('meEmpty').hidden = true; }
+        if (cam) cam.attach($('meVideo'));
         await room.startAudio();
-        $('end').hidden = false; $('start').hidden = true;
-        say('Waiting for your coach to join…');
+        inCall(true);
+        status('Waiting for your coach to join…');
+        followProgress();
         await greetWhenCoachIsHere();
       } catch (err) {
-        say(/Permission|NotAllowed/i.test(err?.name + err?.message)
+        intro(/Permission|NotAllowed/i.test(err?.name + err?.message)
           ? 'Microphone or camera blocked. Tap Allow in the address bar, then try again.'
           : (err?.message || 'Something went wrong. Try again.'));
         await room?.disconnect().catch(() => {});
-        reset();
+        resetCall();
       }
     });
 
     $('end').addEventListener('click', () => room?.disconnect());
-
-    // Call my iPhone: the call service asks Chert to FaceTime the patient's phone, then we follow the call.
-    $('callMe').addEventListener('click', async () => {
-      $('callMe').disabled = true; $('start').disabled = true;
-      say('Asking your coach to call…');
-      try {
-        const { callId, message } = await post('/api/call-me', { video: true });
-        say(message);
-        for (let i = 0; i < 400; i++) {                     // up to about 20 minutes
-          await new Promise((r) => setTimeout(r, 3000));
-          const r = await fetch(`${API}/api/calls/${callId}`);
-          const s = await r.json().catch(() => ({}));
-          if (s.message) say(s.message);
-          if (s.state === 'terminal' || !r.ok) break;
-        }
-      } catch (err) {
-        say(err?.message || "The call didn't go through. Try again in a minute.");
-      }
-      $('callMe').disabled = false; $('start').disabled = false;
+    $('mute').addEventListener('click', async () => {
+      muted = !muted;
+      await room?.localParticipant.setMicrophoneEnabled(!muted).catch(() => { muted = !muted; });
+      $('mute').textContent = muted ? 'Unmute' : 'Mute';
+      $('mute').setAttribute('aria-pressed', String(muted));
     });
 
-    function reset() {
-      greeted = false;
-      $('start').hidden = false; $('start').disabled = false; $('end').hidden = true;
-      $('coachVideo').hidden = true; $('coachEmpty').hidden = false;
-      $('meVideo').hidden = true; $('meEmpty').hidden = false;
-      audioBox.replaceChildren();
+    // The call is over: show your results (the coach saves a moment after you hang up).
+    async function finish() {
+      if (!$('after').hidden) return;
+      clearInterval(progressTimer);
+      resetCall(true);
+      $('after').hidden = false;
+      $('afterTitle').textContent = 'Call finished';
+      $('afterResults').innerHTML = '<p class="muted">Getting your results…</p>';
+      const record = await coachLastSession(API, since);
+      if (record) {
+        $('afterTitle').textContent = 'Session done!';
+        $('afterResults').innerHTML = resultsHtml(sessionResults(record), esc);
+      } else {
+        $('afterResults').innerHTML = '<p class="muted">Your coach did not record a session this time.</p>';
+      }
     }
+
+    function resetCall(keepAfter = false) {
+      greeted = false; muted = false;
+      $('mute').textContent = 'Mute'; $('mute').setAttribute('aria-pressed', 'false');
+      $('start').disabled = false;
+      $('coachVideo').hidden = true; $('coachEmpty').hidden = false;
+      $('meVideo').srcObject = null;
+      audioBox.replaceChildren();
+      inCall(false);
+      if (keepAfter) $('intro').hidden = true;
+      if (!keepAfter) $('after').hidden = true;
+    }
+
+    $('again').addEventListener('click', () => { $('after').hidden = true; $('intro').hidden = false; intro(''); });
+    // "Done" and "Not now" close this tab when it was opened from the dashboard, or go back.
+    const leave = () => { window.close(); setTimeout(() => { if (history.length > 1) history.back(); else intro('You can close this tab now.'); }, 150); };
+    $('done0').addEventListener('click', leave);
+    $('done1').addEventListener('click', leave);
   </script>
 </body>
 </html>
