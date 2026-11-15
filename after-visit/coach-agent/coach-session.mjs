@@ -109,7 +109,7 @@ export class CoachSession {
     if (this.phase === 'idle') return 'The session has not started yet.';
     if (this.phase === 'pain') return 'All exercises are done. Waiting for the pain score from 0 to 10.';
     if (this.phase === 'done') return 'The session is finished and saved.';
-    const reps = this.tracker?.reps ?? [];
+    const reps = (this.tracker?.reps ?? []).filter((r) => r.counted);   // rushed or out-of-view reps don't count
     const good = reps.filter((r) => r.quality === 'good').length;
     const where = this.phase === 'positioning' ? 'waiting to see the patient in the camera' : `${reps.length} of ${ex.reps} reps done, ${good} good`;
     return `Exercise ${this.idx + 1} of ${this.exercises.length}: ${ex.name} (${where}). Instructions: ${ex.instruction}`;
@@ -158,13 +158,14 @@ export class CoachSession {
 export function intro(ex, idx, total) {
   const which = idx === 0 ? 'First' : idx === total - 1 ? 'Last one' : 'Next';
   const aim = ex.mode === 'precise' ? ` Aim for ${ex.target} degrees.` : '';
-  return `${which}: ${ex.name.toLowerCase()}. ${ex.view}. ${ex.instruction} ${ex.reps} reps.${aim} I'll start counting when I can see you.`;
+  const stand = idx === 0 ? ' First, stand about 6 feet, or 3 big steps, back from the phone, so I can see you from head to feet.' : '';
+  return `${which}: ${ex.name.toLowerCase()}. ${ex.view}.${stand} ${ex.instruction} ${ex.reps} reps.${aim} I'll start counting when I can see you.`;
 }
 
 /** A plain cue to get into the picture. */
 export function positionCue(ex, someoneSeen) {
-  const what = ex.joint.includes('knee') ? 'your whole body, down to your feet' : 'your head down to your hips';
+  // Same as the session page: stand about 6 feet back so the whole body, head to feet, is in the picture.
   return someoneSeen
-    ? `I can't see ${what} yet. Step back a little, or tilt the phone down.`
-    : `I can't see you yet. Prop the phone up and step back so I can see ${what}.`;
+    ? "I can't see you from head to feet yet. Step back a little, to about 6 feet, or tilt the phone down."
+    : "I can't see you yet. Prop the phone up and step back about 6 feet, so I can see you from head to feet.";
 }

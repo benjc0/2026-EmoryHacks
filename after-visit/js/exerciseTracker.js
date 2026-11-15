@@ -98,7 +98,8 @@ export class ExerciseTracker {
         mine = ev;
         break;
       }
-      if (s === this.side) mine = ev;
+      // Before a side is locked, a rushed (uncounted) rep on either arm still needs reporting so the patient is told why.
+      if (s === this.side || (ev?.type === 'rep' && !this.locked)) mine = ev;
     }
     if (mine) {
       if (mine.type === 'rep') this.log.addRep(mine.rep);

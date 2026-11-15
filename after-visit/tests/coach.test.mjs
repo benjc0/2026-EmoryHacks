@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CoachSession, intro, positionCue } from '../coach-agent/coach-session.mjs';
 import { planExercises } from '../js/plan.js';
-import { demoMotion } from './fakePerson.mjs';
+import { demoMotion, person } from './fakePerson.mjs';
 
 const W = 1280, H = 720;
 
@@ -98,6 +98,21 @@ test('a session ended early (hang-up) still produces a record', () => {
 
 test('position cues name the right body parts', () => {
   const [arm, squat] = planExercises();
-  assert.match(positionCue(arm, false), /head down to your hips/);
-  assert.match(positionCue(squat, true), /whole body, down to your feet/);
+  assert.match(positionCue(arm, false), /step back about 6 feet.*head to feet/);
+  assert.match(positionCue(squat, true), /Step back a little, to about 6 feet/);
+  assert.match(intro(arm, 0, 2), /stand about 6 feet, or 3 big steps, back from the phone/);
+  assert.doesNotMatch(intro(squat, 1, 2), /6 feet/);   // said once, on the first exercise
+});
+
+test('rushed reps are not counted, the coach says why, and they cannot finish the exercise', () => {
+  const { coach, lines } = coachWithLines();
+  coach.start();
+  let t = play(coach, 0, 2000);                                   // into view, recording starts
+  // a full arm raise and back in about a second, with a short rest: far too fast (a real rep takes 1.5 s or more)
+  const flick = (ms) => { const u = (ms % 1600) / 1600, s = u < 0.2 ? 0 : u < 0.45 ? (u - 0.2) / 0.25 : u < 0.7 ? 1 - (u - 0.45) / 0.25 : 0; return person({ armDeg: 15 + 135 * s }); };
+  t = play(coach, t + 100, 12000, flick);
+  assert.equal(coach.phase, 'recording', 'twelve seconds of flicking must not finish the exercise');
+  assert.equal(coach.tracker.counted, 0);
+  assert.ok(lines.some((l) => /too fast to count/.test(l)), lines.join(' | '));
+  assert.match(coach.status(), /0 of 5 reps done/);
 });
