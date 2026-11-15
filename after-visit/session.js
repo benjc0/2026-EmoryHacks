@@ -31,10 +31,17 @@ $('#choose-tracking').addEventListener('click', () => {
   show('plan');
   $('#change-mode').focus();
 });
+// The dashboard already offers both ways to train, so "Start session" from there skips this choice.
+const fromDashboard = new URLSearchParams(location.search).get('mode') === 'own';
 $('#change-mode').addEventListener('click', () => {
+  if (fromDashboard) { location.href = 'index.html'; return; }
   show('choice');
   $('#choose-tracking').focus();
 });
+if (fromDashboard) {
+  show('plan');
+  $('#change-mode').lastChild.textContent = 'Back to my plan';
+}
 
 // ---------------------------------------------------------------- voice (chunk 3 makes this smarter)
 let voiceOn = false;

@@ -132,8 +132,7 @@
   .day__dow--short { display: none; }
   .day__dow--long { display: inline; }
   .ex-hero { grid-area: ex; }
-  .hero-foot { flex-direction: row; justify-content: space-between; align-items: center; }
-  .hero-actions { display: flex; flex: none; gap: var(--space-2); }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .hero-foot .btn { flex: none; width: auto; padding: 0 var(--space-5); }
   .side { grid-area: side; grid-template-rows: auto auto 1fr; }
   .pair { display: contents; }

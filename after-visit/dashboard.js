@@ -113,7 +113,7 @@ function persist() {
 }
 
 const remaining = () => plan.filter((e) => !completedIds(data, date).has(e.id));
-function session(ids) { if (ids.length) location.href = `session.html?${new URLSearchParams({ exercises: ids.join(','), patient_id: PATIENT_ID, server: SERVER })}`; }
+function session(ids) { if (ids.length) location.href = `session.html?${new URLSearchParams({ exercises: ids.join(','), patient_id: PATIENT_ID, server: SERVER, mode: 'own' })}`; }
 
 // Next visit + medicine: live from the visit when there is one, otherwise the sample care plan.
 const medsList = () => (V?.has_visits ? V.medications : [{ name: SAMPLE_CARE.medicine.name, frequency: SAMPLE_CARE.medicine.when }]);
