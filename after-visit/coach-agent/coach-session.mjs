@@ -69,7 +69,11 @@ export class CoachSession {
 
     for (const ev of r.events) {
       if (ev.type !== 'rep') continue;
-      const n = tr.reps.length, left = ex.reps - n;
+      if (!ev.rep.counted) {   // rushed or out of view: it doesn't count, so say why
+        this.say(ev.rep.notCounted === 'hidden' ? 'Stay in the picture so I can count that one.' : 'That was too fast to count. Slow down.');
+        continue;
+      }
+      const n = tr.counted, left = ex.reps - n;
       let line = ev.rep.quality === 'good' ? `${n}. Good rep.` : `${n}. ${ev.rep.issues[0] || 'Try again'}.`;
       if (left === 1) line += ' One to go!';
       if (left > 0) this.say(line);

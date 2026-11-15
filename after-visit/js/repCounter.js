@@ -21,6 +21,9 @@ export class RepCounter {
     this.current = null;
   }
 
+  /** Reps that count toward the set. Rushed or half-hidden attempts are still logged (for the therapist) but don't count. */
+  get counted() { return this.reps.filter((x) => x.counted).length; }
+
   // "a is further along the movement than b"
   beyond(a, b) { return this.inc ? a >= b : a <= b; }
   inRest(angle) { return this.inc ? angle <= this.rest : angle >= this.rest; }
@@ -80,6 +83,10 @@ export class RepCounter {
     const holdMs = this.ex.holdMs || 0;
     const heldEnough = !holdMs || c.heldMs >= holdMs;
 
+    // Only a controlled, visible rep counts toward the set. Rushed reps (flicker, shaking, flailing) and reps
+    // where you were mostly out of view are logged but never "finish" the exercise in a few seconds.
+    const notCounted = tooFast ? 'too_fast' : lowVisibility ? 'hidden' : null;
+
     const issues = [];
     if (!reachedTarget) issues.push(this.ex.cueRange);
     if (reachedTarget && !heldEnough) issues.push(`Hold at the top for ${holdMs / 1000} seconds`);
@@ -91,9 +98,10 @@ export class RepCounter {
     if (reachedTarget && heldEnough && !tooFast && formFlags.length === 0 && !lowVisibility) quality = 'good';
     else if (reachedPartial) quality = 'fair';
     else quality = 'poor';
+    if (notCounted) quality = 'poor';
 
     return {
-      n: this.reps.length + 1,
+      n: this.counted + 1,
       startMs: Math.round(c.startMs),
       endMs: Math.round(endMs),
       durationMs: Math.round(durationMs),
@@ -102,6 +110,8 @@ export class RepCounter {
       reachedTarget,
       heldMs: Math.round(c.heldMs),
       tooFast,
+      counted: !notCounted,
+      notCounted,
       formFlags,
       quality,
       issues,
@@ -109,6 +119,12 @@ export class RepCounter {
   }
 
   summary() {
+    const all = this.reps;
+    this.reps = all.filter((x) => x.counted);   // totals only include reps that counted
+    try { return this.#summarize(); } finally { this.reps = all; }
+  }
+
+  #summarize() {
     const n = this.reps.length;
     const good = this.reps.filter((r) => r.quality === 'good').length;
     const peaks = this.reps.map((r) => r.peakAngle);

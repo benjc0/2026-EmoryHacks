@@ -4,6 +4,8 @@
 // Flow per exercise: setup (are you in frame?) -> 1.5 s in frame -> 3-2-1 -> recording starts on its own
 // -> reps are counted and scored -> after the last rep the video is closed and the next exercise is offered.
 import { DEMO_PLAN, planExercises } from './js/plan.js';
+import { exerciseArt } from './js/exerciseArt.js';
+import { standGuide } from './js/standGuide.js';
 import { SessionLog } from './js/sessionLog.js';
 import { ExerciseTracker } from './js/exerciseTracker.js';
 import { store } from './js/store.js';
@@ -62,6 +64,8 @@ try {
 const selected = new URLSearchParams(location.search).get('exercises');
 if (selected) PLAN = { ...PLAN, exercises: PLAN.exercises.filter(ex => selected.split(',').includes(ex.id)) };
 const EXS = planExercises(PLAN);
+$('#stand-art').innerHTML = standGuide();
+$('#setup-stand').innerHTML = standGuide();
 // Keep the same patient and backend when returning from either training path.
 const contextQuery = new URLSearchParams({ patient_id: connection.patientId, server: connection.server });
 for (const link of document.querySelectorAll('a[href="index.html"]')) link.href = `index.html?${contextQuery}`;
@@ -152,6 +156,8 @@ function startExercise(i) {
   $('#screen-live').classList.toggle('simple', ex.mode === 'simple');
   $('#live-step').textContent = `Exercise ${i + 1} of ${EXS.length}`;
   $('#live-title').textContent = ex.name;
+  $('#side-name').textContent = ex.name;
+  $('#side-art').innerHTML = exerciseArt(ex.id, { label: `${ex.name}, shown moving: ${ex.instruction}` });
   $('#m-target').textContent = `${ex.target}°`;
   $('#m-angle').textContent = '–';
   $('#m-angle-label').textContent = 'Angle';
@@ -204,7 +210,7 @@ function onPose(res, now) {
   }
 
   if (!T.recording) {
-    frameCheck(r.visible, r.visible ? 'We can see you' : `Move so your whole ${ex.joint.includes('knee') ? 'leg' : 'upper body'} is in the picture`);
+    frameCheck(r.visible, r.visible ? 'We can see you' : 'Step back until your whole body, head to feet, is in the picture');
     return;
   }
 
@@ -223,7 +229,14 @@ function onEvent(ev) {
     return;
   }
   if (ev.type !== 'rep') return;
-  const rep = ev.rep, n = T.reps.length, good = T.reps.filter((x) => x.quality === 'good').length;
+  const rep = ev.rep;
+  if (!rep.counted) {
+    // Too quick or out of view: it does not count, so say why.
+    const why = { too_fast: 'That was too fast, so it did not count. Slow down.', hidden: 'You were out of view, so that one did not count. Stay in the picture.' }[rep.notCounted];
+    setCoach(why, 'warn'); speak(why);
+    return;
+  }
+  const n = T.counted, good = T.reps.filter((x) => x.counted && x.quality === 'good').length;
   $('#m-reps').textContent = `${n}/${ex.reps}`;
   $('#m-good').textContent = String(good);
   const [ic, word] = QUALITY[rep.quality];
@@ -314,7 +327,7 @@ function showBetween(tr) {
   $('#between-title').textContent = done.skipped ? `${done.name} skipped` : `${done.name} done`;
   $('#between-sub').textContent = done.skipped ? "That's okay. You can try it next time."
     : `${s.goodReps} of ${s.totalReps} good reps.${s.goodReps === s.totalReps && s.totalReps ? ' Lovely work!' : ''}`;
-  $('#between-reps').innerHTML = done.reps.map((r) => {
+  $('#between-reps').innerHTML = done.reps.filter((r) => r.counted !== false).map((r) => {
     const [ic, word] = QUALITY[r.quality];
     return `<li class="status status--${r.quality}">${icon(ic)}Rep ${r.n}: ${word}</li>`;
   }).join('');

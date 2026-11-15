@@ -23,6 +23,10 @@
 .plan-item__how { color: var(--muted); }
 .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 2px var(--space-2); border-radius: var(--r-pill);
         background: var(--chip); font-size: var(--fs-sm); }
+.stand { color: var(--fg); }
+.stand__svg { width: 100%; max-width: 420px; height: auto; display: block; margin: var(--space-1) auto 0; }
+.stand__text { margin: var(--space-1) 0 0; }
+.stand-tile { display: grid; gap: var(--space-1); }
 .setup-tips ul { margin: var(--space-1) 0 0; padding-left: 1.2em; display: grid; gap: 6px; color: var(--muted); }
 .error { color: var(--poor); background: var(--poor-bg); border-color: transparent; }
 
@@ -59,6 +63,12 @@
 
 .live__stage-wrap { position: relative; display: grid; place-items: center; overflow: hidden; }
 .live__stage { position: relative; width: 100%; height: 100%; }
+
+/* Wide screens: the empty column beside the camera holds the exercise name and a moving drawing of it. */
+.live__side { display: none; }
+.live__side-name { font-size: var(--fs-page); line-height: 1.2; }
+.live__demo { flex: 0 1 auto; display: grid; place-items: center; background: #13293a; border-radius: var(--r-tile); padding: var(--space-3); min-height: 0; }
+.live__demo .art__svg { width: 100%; max-width: 170px; aspect-ratio: 1; color: #fff; --art-move: #A9E2C6; overflow: visible; }
 .live__stage video, .live__stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); }
 .countdown { position: absolute; inset: 0; display: grid; place-items: center; font-size: 96px; font-weight: var(--w-light);
              text-shadow: 0 2px 16px rgb(0 0 0 / .7); }
@@ -69,7 +79,11 @@
 .setup[hidden] { display: none; }
 .setup__card { width: 100%; max-width: 520px; background: rgb(11 22 32 / .92); border-radius: var(--r-tile);
                padding: var(--space-3) var(--space-4); display: grid; gap: var(--space-2); }
-.setup__text { font-size: var(--fs-lg); }
+.setup__text { font-size: var(--fs-body); color: #C5CFD6; }
+.setup__dist { font-size: var(--fs-lg); }
+.stand--small { color: #fff; --accent-ink: #A9E2C6; }
+.stand--small .stand__svg { max-width: 220px; margin: 0; }
+.setup__card { max-height: 100%; overflow-y: auto; }
 .frame-check { font-weight: var(--w-medium); color: #F3CB6B; }
 .frame-check.ok { color: #A9E2C6; }
 .setup__actions { display: flex; gap: var(--space-1); flex-wrap: wrap; }
@@ -98,7 +112,9 @@
 @media (min-width: 900px) and (orientation: landscape) {
   .live { grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr); }
   .live__top { grid-column: 1 / -1; }
-  .hud { align-content: center; padding: var(--space-4); }
+  .hud { align-content: center; padding: var(--space-4); overflow-y: auto; }
+  .live__side { display: grid; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: 1px solid #23384a; }
+  .live__title { visibility: hidden; }   /* the name is shown in the side column instead */
   .hud__m { grid-template-columns: 1fr 1fr; row-gap: var(--space-3); }
 }
 

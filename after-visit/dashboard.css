@@ -163,29 +163,6 @@ dialog::backdrop { background: rgb(15 43 64 / .45); }
 .demo:has(.art__svg) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); padding: var(--space-2); }
 .demo .art__svg { flex: 1 1 0; min-height: 0; width: auto; max-height: 200px; aspect-ratio: 1; stroke-width: initial; color: var(--fg); --art-move: var(--accent-ink); overflow: visible; }
 .demo:has(.art__svg) .demo__cap { position: static; flex: none; }
-.art__ghost { opacity: .35; }
-.art__prop { opacity: .5; }
-.art__move { transform-box: view-box; }
-.art__move--raise { animation: art-raise 3.2s ease-in-out infinite; }
-.art__move--reach { animation: art-reach 4s ease-in-out infinite; }
-.art__move--kick  { animation: art-kick 3.6s ease-in-out infinite; }
-.art__pose--a { animation: art-pose-a 3.2s ease-in-out infinite; }
-.art__pose--b { animation: art-pose-b 3.2s ease-in-out infinite; }
-.art__ghost-pose { display: none; }
-@keyframes art-raise { 0%, 15% { transform: rotate(0); } 45%, 65% { transform: rotate(-125deg); } 95%, 100% { transform: rotate(0); } }
-@keyframes art-reach { 0%, 12% { transform: rotate(0); } 40%, 75% { transform: rotate(-165deg); } 97%, 100% { transform: rotate(0); } }
-@keyframes art-kick  { 0%, 15% { transform: rotate(0); } 42%, 70% { transform: rotate(-80deg); } 95%, 100% { transform: rotate(0); } }
-@keyframes art-pose-a { 0%, 30% { opacity: 1; } 42%, 82% { opacity: 0; } 94%, 100% { opacity: 1; } }
-@keyframes art-pose-b { 0%, 30% { opacity: 0; } 42%, 82% { opacity: 1; } 94%, 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  /* No loop: show the finished movement over the dashed start position. */
-  .art__move, .art__pose { animation: none !important; }
-  .art__move--raise { transform: rotate(-125deg); }
-  .art__move--reach { transform: rotate(-165deg); }
-  .art__move--kick  { transform: rotate(-80deg); }
-  .art__pose--a { opacity: 0; }
-  .art__pose--b { opacity: 1; }
-  .art__ghost-pose { display: inline; }
 }
 .demo__cap { position: absolute; left: var(--space-2); bottom: var(--space-2); display: inline-flex; align-items: center; gap: var(--space-1);
              min-height: 44px; padding: 0 var(--space-3); border-radius: var(--r-pill); background: var(--surface); color: var(--fg); font-size: var(--fs-sm); }

@@ -29,7 +29,8 @@ export class ExerciseTracker {
 
   get counter() { return this.counters[this.side] || Object.values(this.counters)[0]; }
   get reps() { return this.counter.reps; }
-  get done() { return this.reps.length >= this.ex.reps; }
+  get counted() { return this.counter.counted; }          // reps that count (not rushed or hidden)
+  get done() { return this.counted >= this.ex.reps; }
 
   /** Recording started: from now on frames are logged and reps count. `now` is performance.now(). */
   startRecording(now) { this.recording = true; this.t0 = now; }
@@ -89,7 +90,7 @@ export class ExerciseTracker {
     let mine = null;
     for (const [s, c] of Object.entries(this.counters)) {
       const ev = c.update({ t, angle: per[s].angle, visible: per[s].fr.visible, checks: per[s].fr.checks });
-      if (ev?.type === 'rep' && !this.locked) {            // first full rep decides the side
+      if (ev?.type === 'rep' && ev.rep.counted && !this.locked) {   // first counted rep decides the side
         this.locked = true;
         this.side = s;
         this.counters = { [s]: c };

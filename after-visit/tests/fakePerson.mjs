@@ -41,7 +41,7 @@ export function person({ armDeg = 15, kneeDeg = 175, elbowBend = 0, lean = 0, w 
 
 /**
  * The demo motion over time: every 5 s one arm raise and one squat together, alternating a good
- * rep (arm 150°, knees 100°) and a short one (arm 115°, knees 140°). Rep k peaks at 1.5 s + 5k s.
+ * rep (arm 150°, knees 100°) and a short one (arm 115°, knees 135°). Rep k peaks at 1.5 s + 5k s.
  */
 export function demoMotion(tMs, opts = {}) {
   const cycle = 5000, k = Math.floor(tMs / cycle), u = (tMs % cycle) / cycle;
@@ -49,6 +49,6 @@ export function demoMotion(tMs, opts = {}) {
   // 0–0.2 rest, 0.2–0.5 up, 0.5–0.8 down, 0.8–1 rest (3 s per rep: not "too fast")
   const s = u < 0.2 ? 0 : u < 0.5 ? (u - 0.2) / 0.3 : u < 0.8 ? 1 - (u - 0.5) / 0.3 : 0;
   const ease = (1 - Math.cos(Math.PI * s)) / 2;
-  const armPeak = good ? 150 : 115, kneePeak = good ? 100 : 140;
+  const armPeak = good ? 150 : 115, kneePeak = good ? 100 : 135;
   return person({ armDeg: 15 + (armPeak - 15) * ease, kneeDeg: 175 - (175 - kneePeak) * ease, ...opts });
 }

@@ -105,3 +105,31 @@ test('frameAt finds the frame for a video time', () => {
   assert.equal(frameAt(frames, 100).t, 66);
   assert.equal(frameAt(frames, 1500), null);
 });
+
+test('rushed reps are logged but do not count, so five quick flicks cannot finish the set', () => {
+  const c = new RepCounter(arm, { targetAngle: 140 });
+  const quick = [[0, 20], [100, 20]];
+  for (let k = 0; k < 5; k++) quick.push([200 + k * 800, 145], [600 + k * 800, 22]);   // a full rep every 0.8 s
+  const rs = reps(run(c, quick));
+  assert.ok(rs.length >= 4);
+  assert.ok(rs.every((r) => r.counted === false && r.notCounted === 'too_fast'));
+  assert.equal(c.counted, 0);
+  assert.equal(c.summary().totalReps, 0);
+  // a slow, controlled rep right after still counts
+  const slow = reps(run(c, [[10000, 20], [10100, 20], [12000, 145], [14000, 22]]));
+  assert.equal(slow.at(-1).counted, true);
+  assert.equal(c.counted, 1);
+});
+
+test('a rep where you were mostly out of view does not count', () => {
+  const c = new RepCounter(arm, { targetAngle: 140 });
+  const events = [];
+  const feed = (t, angle, visible) => { const ev = c.update({ t, angle, visible, checks: {} }); if (ev) events.push(ev); };
+  feed(0, 20, true); feed(100, 20, true);
+  for (let t = 200; t <= 2400; t += 100) feed(t, 20 + Math.min(125, (t - 200) / 8), t < 700);
+  for (let t = 2500; t <= 4600; t += 100) feed(t, Math.max(22, 145 - (t - 2500) / 8), false);
+  const rs = reps(events);
+  assert.equal(rs.length, 1);
+  assert.equal(rs[0].notCounted, 'hidden');
+  assert.equal(c.counted, 0);
+});

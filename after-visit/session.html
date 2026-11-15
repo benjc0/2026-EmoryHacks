@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#F4F0E2" />
   <title>Exercise session | Mend</title>
   <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="art.css" />
   <link rel="stylesheet" href="session.css" />
   <script type="module" src="session.js"></script>
 </head>
@@ -65,10 +66,16 @@
 
     <ol id="plan-list" class="plan-list"></ol>
 
+    <div class="tile stand-tile">
+      <h2 class="tile-title"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Where to stand</h2>
+      <div class="stand" id="stand-art"></div>
+      <p class="stand__text"><b>Stand about 6 feet (2 m) from the phone, or 3 big steps.</b> The camera needs to see you from your head to your feet.</p>
+    </div>
+
     <div class="tile setup-tips">
-      <h2 class="tile-title"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Before you start</h2>
+      <h2 class="tile-title"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Before you start</h2>
       <ul>
-        <li>Prop your phone up at about waist height, 2 to 3 steps away.</li>
+        <li>Prop your phone up at about waist height, standing upright on a table or shelf.</li>
         <li>Use a bright room, and keep the light in front of you.</li>
         <li>The camera records each exercise so your therapist can check it. The video stays on this phone.</li>
       </ul>
@@ -106,6 +113,8 @@
 
         <div id="setup" class="setup" role="group" aria-labelledby="setup-text">
           <div class="setup__card">
+            <div class="stand stand--small" id="setup-stand" aria-hidden="true"></div>
+            <p class="setup__dist"><b>Stand about 6 feet (2 m) back</b>, so the camera sees you from head to feet.</p>
             <p id="setup-text" class="setup__text"></p>
             <p id="frame-check" class="frame-check" role="status">Looking for you…</p>
             <div class="setup__actions">
@@ -118,6 +127,10 @@
     </div>
 
     <div class="hud">
+      <aside class="live__side" aria-label="What to do">
+        <h2 class="live__side-name" id="side-name"></h2>
+        <div class="live__demo" id="side-art"></div>
+      </aside>
       <div id="metrics" class="hud__m">
         <div data-precise class="m-big"><small id="m-angle-label">Angle</small><b class="num" id="m-angle">–</b></div>
         <div data-precise><small>Target</small><b class="num" id="m-target">–</b></div>

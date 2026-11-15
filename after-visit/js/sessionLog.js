@@ -140,7 +140,7 @@ export class SessionLog {
 // ------------------------------------------------------------------ derived summaries
 
 export function totals(exercises) {
-  const reps = exercises.flatMap((e) => e.reps || []);
+  const reps = exercises.flatMap((e) => e.reps || []).filter((r) => r.counted !== false);   // rushed or hidden attempts don't count
   const count = (q) => reps.filter((r) => r.quality === q).length;
   const good = count('good');
   return {
