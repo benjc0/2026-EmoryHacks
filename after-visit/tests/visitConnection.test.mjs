@@ -48,7 +48,12 @@ test('session log exercise totals update dashboard completion without counting p
   assert.ok(completedIds(data, localDate()).has('mini-squat'));
 });
 
-test('the public site sends the visit button to the Visit Copilot on this computer', () => {
+test('the public site uses the hosted Visit Copilot server for data and the visit button', () => {
   const c = visitConnection('https://mending.fit/');
-  assert.equal(c.visitUrl, 'http://localhost:8000/');
+  assert.equal(c.visitUrl, 'https://visit.mending.fit/');
+  assert.equal(c.api, 'https://visit.mending.fit/api/patients/demo-patient');
+});
+test('an explicit server still wins on the public site', () => {
+  const c = visitConnection('https://mending.fit/?server=http://localhost:8000');
+  assert.equal(c.api, 'http://localhost:8000/api/patients/demo-patient');
 });
